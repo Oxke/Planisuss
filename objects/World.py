@@ -16,7 +16,6 @@ NUM_CELLS = 50
 NEIGHBORHOOD = 1
 DAY_BY_DAY_RESULTS = []
 
-
 class World:
     """Class representing the world"""
     def __init__(self, num_cells, neighborhood):
@@ -127,18 +126,8 @@ class World:
             for row in self.grid:
                 for cell in row:
                     if cell.vegetob: cell.vegetob.grow()
-                    if cell.herd:
-                        if len(cell.herd) == 0:
-                            cell.herd = None
-                        else:
-                            for erbast in list(cell.herd.members):
-                                erbast.grow()
-                    if cell.pride:
-                        if len(cell.pride) == 0:
-                            cell.pride = None
-                        else:
-                            for carviz in list(cell.pride.members):
-                                carviz.grow()
+                    if cell.herd: cell.herd.grow()
+                    if cell.pride: cell.pride.grow()
             # Movement: The individuals of animal species decide if move in another
             # area. Movement is articulated as individual and social group movement
             for row in self.grid:

@@ -9,13 +9,13 @@ class Cell:
         self.pride = None
         self.water = water  # if true, no animal or vegetob can live there
         self.vegetob = None
+        self._population = 0
 
     def spawn_vegetob(self, density: float):
         """Spawns a vegetob in the cell"""
         assert self.vegetob is None, f"{self} already has a vegetob"
         assert not self.water, f"Can't spawn vegetob in water at {self}"
         self.vegetob = __import__("Ecosystem").Vegetob(density, self)
-
 
     def add_herd(self, herd, world=None):
         """The world argument is only used when spawning a new herd when
@@ -57,6 +57,31 @@ class Cell:
     def __str__(self):
         return f"Cell({self.x}, {self.y})"
 
+    @property
     def population(self):
         res = len(self.herd) if self.herd else 0
-        return res+len(self.pride) if self.pride else res
+        self._population = res+len(self.pride) if self.pride else res
+        return self._population
+
+class DeadVegetob:
+    def __init__(self):
+        self.density = 0
+
+
+class Graveyard(Cell):
+    def __init__(self):
+        super().__init__(None, None)
+        self.vegetob = DeadVegetob()
+
+    def add_herd(self, herd):
+        pass
+
+    def add_pride(self, pride):
+        pass
+
+    def remove_herd(self, herd):
+        pass
+
+    def remove_pride(self, pride):
+        pass
+
