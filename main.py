@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 from matplotlib import pyplot as pp
 import numpy as np
-import Planisuss.World
-import Planisuss.Ecosystem
+from objects import World
 
-
-NUMCELLS = 4
+NUMCELLS = 10
 NEIGHBORHOOD = 1
 
-def main():
+if __name__ == "__main__":
     world = World.World(NUMCELLS, NEIGHBORHOOD)
-    world.run()
+    anim = world.run(300)
+    plt.show()

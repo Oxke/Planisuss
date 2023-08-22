@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-
-
 class Cell:
     """Class representing a cell in the world
     A cell can contain a vegetob, a herd of erbast and a pride of carviz"""
@@ -8,7 +6,7 @@ class Cell:
         self.x = x
         self.y = y
         self.herd = None
-        self.prides = []
+        self.pride = None
         self.water = water  # if true, no animal or vegetob can live there
         self.vegetob = None
 
@@ -18,11 +16,10 @@ class Cell:
         assert not self.water, f"Can't spawn vegetob in water at {self}"
         self.vegetob = __import__("Ecosystem").Vegetob(density, self)
 
-    def n_carvizes(self):
-        """return sum of all len(pride) for pride in self.prides"""
-        return sum(len(pride) for pride in self.prides)
 
     def add_herd(self, herd, world=None):
+        """The world argument is only used when spawning a new herd when
+        starting the simulation"""
         if world:
             erbast = __import__("Ecosystem").Erbast.spawn(self, world)
             self.herd = __import__("Ecosystem").Herd([erbast], self, world)
@@ -36,14 +33,30 @@ class Cell:
     def remove_herd(self):
         self.herd = None
 
-    def add_pride(self, pride):
-        self.prides.append(pride)
+    def add_pride(self, pride, world=None):
+        if world:
+            carviz = __import__("Ecosystem").Carviz.spawn(self, world)
+            self.pride = __import__("Ecosystem").Pride([carviz], self, world)
+            self.pride.members[0].pride = self.pride
+        elif self.pride:
+            if self.pride != pride:
+                if pride.get_sa() + self.pride.get_sa() > 1:
+                    self.pride = self.pride.join(pride)
+                else:
+                    self.pride = self.pride.fight(pride)
+        else:
+            self.pride = pride
+            self.pride.hunt()
 
-    def remove_pride(self, pride):
-        self.prides.remove(pride)
+    def remove_pride(self):
+        self.pride = None
 
     def __repr__(self):
         return f"Cell({self.x}, {self.y})"
 
     def __str__(self):
         return f"Cell({self.x}, {self.y})"
+
+    def population(self):
+        res = len(self.herd) if self.herd else 0
+        return res+len(self.pride) if self.pride else res
