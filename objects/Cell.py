@@ -43,11 +43,11 @@ class Cell:
                 if pride.get_sa() + self.pride.get_sa() > 1:
                     self.pride = self.pride.join(pride)
                 else:
-                    # self.pride = self.pride.fight(pride)
-                    self.pride = self.pride.join(pride)
+                    self.pride = self.pride.fight(pride)
         else:
             self.pride = pride
-            self.pride.hunt()
+            if self.herd:
+                self.pride.hunt()
 
     def remove_pride(self):
         self.pride = None

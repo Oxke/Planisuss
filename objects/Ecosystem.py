@@ -8,7 +8,6 @@ COUNT = 1
 
 
 def part(n: float, m: int):
-    print(n, m)
     assert isinstance(m, int)
     if m == 1:
         return [min(n,100)]
@@ -120,7 +119,7 @@ class Erbast(Animal):
             self.pos.add_herd(self.herd)
 
     def choose_erbast(self):
-        if np.random.random() > (1-self.social_attitude)/1000:
+        if np.random.random() > (1-self.social_attitude)/100:
             self.stay_with_herd()
         else:
             self.quit_herd()
@@ -145,7 +144,7 @@ class Erbast(Animal):
                 del self.herd.members[-1]
         # this partitions randomly the energy and lifetime of the ancestor to
         # the children
-        if self.energy > 5 and not reason == "overcrowding":
+        if self.energy > 5 and reason not in ["overcrowding", "hunted_down"]:
             # print(self.energy*2, 2, "energy")
             # print(self.lifetime*2, 2, "lifetime")
             for E, L in zip(part(self.energy*2, 2), part(self.lifetime*2, 2)):
@@ -211,7 +210,7 @@ class Carviz(Animal):
             self.pos.add_pride(self.pride)
 
     def choose_carviz(self):
-        if np.random.random() > (1-self.social_attitude)/200:
+        if np.random.random() > (1-self.social_attitude)/100:
             self.stay_with_pride()
         else:
             self.quit_pride()
@@ -242,7 +241,7 @@ class Carviz(Animal):
                 del self.pride.members[-1]
         # this partitions randomly the energy and lifetime of the ancestor to
         # the children
-        if self.energy > 5 and not reason == "overcrowding":
+        if self.energy > 5 and reason not in ["overcrowding", "fight"]:
             # print(self.energy*2, 2, "energy")
             # print(self.lifetime*2, 2, "lifetime")
             for E, L in zip(part(self.energy*2, 2), part(self.lifetime*2, 2)):
@@ -301,7 +300,6 @@ class Group:
 
     def add_energy(self, energy):
         extra = 0
-        print(energy, len(self), "add_energy")
         for m, en in zip(self.members, part(energy, len(self))):
             en += extra
             extra = max(0, m.energy+en-100)
@@ -327,7 +325,7 @@ class Group:
         return np.array([m.social_attitude for m in self.members]).mean()
 
     def get_champion(self):
-        return max(self.members, key=lambda m: m.energy)
+        return max(self.members, key=lambda m: m.energy if m._alive else 0)
 
 
 class Herd(Group):
@@ -414,10 +412,13 @@ class Pride(Group):
         while len(self)*len(other_pride) > 0:
             self_champion = self.get_champion()
             other_champion = other_pride.get_champion()
-            if self_champion.energy > other_champion.energy:
-                self_champion.die("fight")
-            else:
-                other_champion.die("fight")
+            try:
+                if self_champion.energy > other_champion.energy:
+                    self_champion.die("fight")
+                else:
+                    other_champion.die("fight")
+            except AlreadyDeadError:
+                print("Just killed dead carviz, continuing the fight...")
         if len(self) > 0:
             del other_pride
             return self
@@ -425,9 +426,17 @@ class Pride(Group):
         return other_pride
 
     def hunt(self):
-        if self.pos.herd:
-            prey = self.pos.herd.get_champion()
+        prey = self.pos.herd.get_champion()
+        if prey.energy * np.random.random() < self.get_energy() * np.random.random():
             self.add_energy(prey.energy)
-            prey.die("hunted_down")
-
-
+            try:
+                prey.die("hunted_down")
+                print(f"killed {id(prey)}")
+            except AlreadyDeadError:
+                print("Just killed dead erbast, continuing the hunt (likely \
+he got killed also by a different pride)...")
+        else:
+            # damage inflicted by unsuccessful hunt
+            self.get_champion().energy -= prey.energy
+            if self.get_energy() > self.pos.herd.get_champion().energy:
+                self.hunt()

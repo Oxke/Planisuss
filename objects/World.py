@@ -12,7 +12,7 @@ from errors import *
 
 DAYS = 1000
 
-NUM_CELLS = 50
+NUM_CELLS = 100
 NEIGHBORHOOD = 1
 DAY_BY_DAY_RESULTS = []
 
@@ -109,8 +109,8 @@ class World:
         vegetob = [[0 if cell.vegetob is None else cell.vegetob.density/100
                     for cell in row] for row in self.grid]
 
-        z = np.zeros((self.num_cells, self.num_cells))
-        status = np.dstack((z, z, vegetob))
+        water = np.array([[cell.water for cell in row] for row in self.grid])
+        status = np.dstack((water, water, vegetob+water))
         DAY_BY_DAY_RESULTS.append((status, (0, 0, 0)))
 
         start_cell.add_herd(None, self)
@@ -172,6 +172,7 @@ class World:
     def plot_old(self, frame):
         self.fig.suptitle(f"Planisuss: Day {frame}", fontsize=24)
         self.ax[0].clear()
+        self.ax[0].axis("off")
         self.ax[1].clear()
         status = DAY_BY_DAY_RESULTS[frame][0]
         self.ax[0].imshow(status)
@@ -184,23 +185,23 @@ class World:
 
     def plot_new(self, frame, create=False):
         """Plots the world"""
-        # water = [[cell.water for cell in row] for row in self.grid]
-        vegetob = [[0 if cell.vegetob is None else cell.vegetob.density/100
-                    for cell in row] for row in self.grid]
-        erbasts = [[0 if cell.herd is None else min(len(cell.herd)/4, 1.0)
-                    for cell in row] for row in self.grid]
-        carvizes = [[0 if cell.pride is None else min(len(cell.pride)/4, 1.0)
-                    for cell in row] for row in self.grid]
+        water = np.array([[cell.water for cell in row] for row in self.grid])
+        vegetob = np.array([[0 if cell.vegetob is None else cell.vegetob.density/100
+                    for cell in row] for row in self.grid])
+        erbasts = np.array([[0 if cell.herd is None else min(len(cell.herd)/4, 1.0)
+                    for cell in row] for row in self.grid])
+        carvizes = np.array([[0 if cell.pride is None else min(len(cell.pride)/4, 1.0)
+                    for cell in row] for row in self.grid])
         if create:
             fig, ax = plt.subplots(1, 2, figsize=(20, 10))
             fig.suptitle("Planisuss: Day 0", fontsize=24)
-            ax[0].get_xaxis().set_visible(False)
-            ax[0].get_yaxis().set_visible(False)
+            ax[0].axis('off')
             return fig, ax
         self.fig.suptitle(f"Planisuss: Day {frame}", fontsize=24)
-        self.ax[1].clear()
         self.ax[0].clear()
-        status = np.dstack((carvizes, erbasts, vegetob))
+        self.ax[0].axis("off")
+        self.ax[1].clear()
+        status = np.dstack((carvizes+water, erbasts+water, vegetob+water))
         self.ax[0].imshow(status)
 
         num_erbasts = self.total_animals("erbasts")
@@ -216,8 +217,8 @@ class World:
         self.ax[1].legend()
         self.ax[1].set_xlabel("Days")
         self.ax[1].set_ylabel("Number of animals")
-        if num_erbasts+num_carvizes == 0 and frame != 0:
-            raise TotalExtinction
+        # if num_erbasts+num_carvizes == 0 and frame != 0:
+        #    raise TotalExtinction
 
     def run(self, days=1000):
         ani = Interactive_Animation(self.fig, self.day, mini=0, maxi=10000,
