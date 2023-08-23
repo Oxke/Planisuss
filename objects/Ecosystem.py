@@ -92,7 +92,7 @@ class Erbast(Animal):
         # self.pos.vegetob.density -= quantity
 
     def stay_with_herd(self):
-        self.energy -= self.world.distance(self.pos, self.herd.pos)
+        self.energy -= self.age**2 * self.world.distance(self.pos, self.herd.pos)
         if self.energy <= 0:
             # self.die("lack_energy_movement")
             pass
@@ -106,7 +106,7 @@ class Erbast(Animal):
         if self.energy > self.pos.vegetob.density:
             destination = np.random.choice(self.world.get_adjacent(self.pos,
                                                                     flag="land"))
-            self.energy -= self.world.distance(self.pos, destination)
+            self.energy -= self.age**2 * self.world.distance(self.pos, destination)
             if self.energy <= 0:
                 # self.die("lack_energy_movement")
                 return
@@ -242,9 +242,10 @@ class Carviz(Animal):
         # this partitions randomly the energy and lifetime of the ancestor to
         # the children
         if self.energy > 5 and reason not in ["overcrowding", "fight"]:
+            number = np.random.randint(2, 4)
             # print(self.energy*2, 2, "energy")
             # print(self.lifetime*2, 2, "lifetime")
-            for E, L in zip(part(self.energy*2, 2), part(self.lifetime*2, 2)):
+            for E, L in zip(part(self.energy*3, 3), part(self.lifetime*3, 3)):
                 if L < 2:
                     continue
                 s_a = min(1, max(0.1, np.random.normal(self.social_attitude, 0.1)))
@@ -418,7 +419,8 @@ class Pride(Group):
                 else:
                     other_champion.die("fight")
             except AlreadyDeadError:
-                print("Just killed dead carviz, continuing the fight...")
+                print("Just killed dead carviz, stopping the fight...")
+                break
         if len(self) > 0:
             del other_pride
             return self
@@ -431,7 +433,6 @@ class Pride(Group):
             self.add_energy(prey.energy)
             try:
                 prey.die("hunted_down")
-                print(f"killed {id(prey)}")
             except AlreadyDeadError:
                 print("Just killed dead erbast, continuing the hunt (likely \
 he got killed also by a different pride)...")

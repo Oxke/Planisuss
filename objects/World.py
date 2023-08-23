@@ -12,7 +12,7 @@ from errors import *
 
 DAYS = 1000
 
-NUM_CELLS = 100
+NUM_CELLS = 30
 NEIGHBORHOOD = 1
 DAY_BY_DAY_RESULTS = []
 
@@ -177,9 +177,9 @@ class World:
         status = DAY_BY_DAY_RESULTS[frame][0]
         self.ax[0].imshow(status)
         num_erbasts, num_carvizes, num_total = DAY_BY_DAY_RESULTS[frame][1]
-        self.ax[1].axvline(x=frame, c="r", lw=2, label="TODAY")
-        self.ax[1].plot([x[1][0] for x in DAY_BY_DAY_RESULTS], label=f"Erbasts: {num_erbasts}")
-        self.ax[1].plot([x[1][1] for x in DAY_BY_DAY_RESULTS], label=f"Carvizes: {num_carvizes}")
+        self.ax[1].axvline(x=frame, c="b", lw=2, label="TODAY")
+        self.ax[1].plot([x[1][0] for x in DAY_BY_DAY_RESULTS], 'g', label=f"Erbasts: {num_erbasts}")
+        self.ax[1].plot([x[1][1] for x in DAY_BY_DAY_RESULTS], 'r', label=f"Carvizes: {num_carvizes}")
         # self.ax[1].plot([x[1][2] for x in DAY_BY_DAY_RESULTS], label=f"Total: {num_total}")
         self.ax[1].legend()
 
@@ -211,8 +211,8 @@ class World:
         DAY_BY_DAY_RESULTS.append((status, (num_erbasts, num_carvizes,
                                             num_erbasts+num_carvizes)))
 
-        self.ax[1].plot([x[1][0] for x in DAY_BY_DAY_RESULTS], label=f"Erbasts: {num_erbasts}")
-        self.ax[1].plot([x[1][1] for x in DAY_BY_DAY_RESULTS], label=f"Carvizes: {num_carvizes}")
+        self.ax[1].plot([x[1][0] for x in DAY_BY_DAY_RESULTS], 'g', label=f"Erbasts: {num_erbasts}")
+        self.ax[1].plot([x[1][1] for x in DAY_BY_DAY_RESULTS], 'r', label=f"Carvizes: {num_carvizes}")
         # self.ax[1].plot([x[1][2] for x in DAY_BY_DAY_RESULTS], label=f"Total: {num_total}")
         self.ax[1].legend()
         self.ax[1].set_xlabel("Days")
