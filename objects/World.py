@@ -51,7 +51,7 @@ class World:
                             neighborhood.append(self.grid[x][y])
         return neighborhood
 
-    def get_adjacent(self, cell: Cell):
+    def get_adjacent(self, cell: Cell, flag=None):
         """Returns the adjacent cells of a cell
         Context: I didn't like a continent where the cells were not connected,
         even though in theory they are since the "circle" of radius 1 is
@@ -63,13 +63,13 @@ class World:
         need to change the get_neighbors function.
         In particular the continent is now connected."""
         adjacent_cells = []
-        if cell.x > 0:
+        if cell.x > 0 and (flag is None or (flag == "land" and not self.grid[cell.x-1][cell.y].water)):
             adjacent_cells.append(self.grid[cell.x-1][cell.y])
-        if cell.x < self.num_cells-1:
+        if cell.x < self.num_cells-1 and (flag is None or (flag == "land" and not self.grid[cell.x+1][cell.y].water)):
             adjacent_cells.append(self.grid[cell.x+1][cell.y])
-        if cell.y > 0:
+        if cell.y > 0 and (flag is None or (flag == "land" and not self.grid[cell.x][cell.y-1].water)):
             adjacent_cells.append(self.grid[cell.x][cell.y-1])
-        if cell.y < self.num_cells-1:
+        if cell.y < self.num_cells-1 and (flag is None or (flag == "land" and not self.grid[cell.x][cell.y+1].water)):
             adjacent_cells.append(self.grid[cell.x][cell.y+1])
         return adjacent_cells
 
@@ -114,8 +114,15 @@ class World:
         DAY_BY_DAY_RESULTS.append((status, (0, 0, 0)))
 
         start_cell.add_herd(None, self)
-        carviz_cell = np.random.choice(self.get_neighbors(start_cell, 5, "land"))
-        # carviz_cell.add_pride(None, self)
+        carviz_cell = np.random.choice(self.get_neighbors(start_cell,
+                                                          self.num_cells, "land"))
+        carviz_cell.add_pride(None, self)
+        carviz_cell = np.random.choice(self.get_neighbors(carviz_cell,
+                                                          self.num_cells, "land"))
+        carviz_cell.add_pride(None, self)
+        carviz_cell = np.random.choice(self.get_neighbors(carviz_cell,
+                                                          self.num_cells, "land"))
+        carviz_cell.add_pride(None, self)
         return start_cell
 
     def day(self, frame):
@@ -126,25 +133,32 @@ class World:
             # Growing: the vegetob grows everywhere
             for row in self.grid:
                 for cell in row:
+                    population = cell.population()
                     if cell.vegetob: cell.vegetob.grow()
                     if cell.herd:
                         if len(cell.herd) == 0:
                             cell.herd = None
                         else:
                             for erbast in list(cell.herd.members):
-                                erbast.grow()
+                                if erbast._alive:
+                                    erbast.grow(population)
+                                else:
+                                    cell.herd.members.remove(erbast)
                     if cell.pride:
                         if len(cell.pride) == 0:
                             cell.pride = None
                         else:
                             for carviz in list(cell.pride.members):
-                                carviz.grow()
+                                if carviz._alive:
+                                    carviz.grow(population)
+                                else:
+                                    cell.pride.members.remove(carviz)
             # Movement: The individuals of animal species decide if move in another
             # area. Movement is articulated as individual and social group movement
             for row in self.grid:
                 for cell in row:
-                    if cell.herd is not None:
-                        cell.herd.choose()
+                    if cell.herd: cell.herd.choose()
+                    if cell.pride: cell.pride.choose()
             # Grazing: The animals which did not move can graze the Vegetob in the
             # area. Included in previous step
             # Spawning: Individuals of animal species can generate their offspring

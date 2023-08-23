@@ -43,7 +43,8 @@ class Cell:
                 if pride.get_sa() + self.pride.get_sa() > 1:
                     self.pride = self.pride.join(pride)
                 else:
-                    self.pride = self.pride.fight(pride)
+                    # self.pride = self.pride.fight(pride)
+                    self.pride = self.pride.join(pride)
         else:
             self.pride = pride
             self.pride.hunt()
@@ -60,3 +61,36 @@ class Cell:
     def population(self):
         res = len(self.herd) if self.herd else 0
         return res+len(self.pride) if self.pride else res
+
+class DeadVegetob:
+    def __init__(self, graveyard):
+        self.density = 0
+        self.position = graveyard
+
+class Graveyard(Cell):
+    """A graveyard is a cell where animals go to die"""
+    def __init__(self, x: int, y: int, reason: str):
+        super().__init__(x, y)
+        self.vegetob = DeadVegetob(self)
+        self.reason_of_death = reason
+
+    def __repr__(self):
+        return f"Graveyard({self.x}, {self.y})"
+
+    def __str__(self):
+        return f"Graveyard({self.x}, {self.y})"
+
+    def add_herd(self):
+        pass
+
+    def add_pride(self):
+        pass
+
+    def remove_herd(self):
+        pass
+
+    def remove_pride(self):
+        pass
+
+    def population(self):
+        return 0
