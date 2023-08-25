@@ -1,21 +1,15 @@
 #!/usr/bin/env python
 # from matplotlib.animation import FuncAnimation
-from Interactive_Animation import Interactive_Animation
+from Visualization import Interactive_Animation
 from matplotlib.widgets import Button
 from matplotlib import animation
 import matplotlib as mpl
 import numpy as np
 from numpy import random as rd
-from Cell import Cell
+from Objects.Cell import Cell
 from matplotlib import pyplot as plt
 from errors import *
-
-DAYS = 10000
-
-NUM_CELLS = 100
-NEIGHBORHOOD = 1
-DAY_BY_DAY_RESULTS = []
-
+from variables import *
 
 class World:
     """Class representing the world"""
@@ -85,6 +79,7 @@ class World:
             if cell in done:
                 continue
             cell.spawn_vegetob(rd.randint(0, 100))
+            cell.add_herd(None, self)
             done.append(cell)
             for neighbor in self.get_adjacent(cell):
                 if neighbor in done:
@@ -109,20 +104,22 @@ class World:
         vegetob = [[0 if cell.vegetob is None else cell.vegetob.density/100
                     for cell in row] for row in self.grid]
 
+        # start_cell.add_herd(None, self)
+
         water = np.array([[cell.water for cell in row] for row in self.grid])
         status = np.dstack((water, water, vegetob+water))
         DAY_BY_DAY_RESULTS.append((status, (0, 0, 0)))
 
-        start_cell.add_herd(None, self)
-        carviz_cell = np.random.choice(self.get_neighbors(start_cell,
-                                                          self.num_cells, "land"))
-        carviz_cell.add_pride(None, self)
-        carviz_cell = np.random.choice(self.get_neighbors(carviz_cell,
-                                                          self.num_cells, "land"))
-        carviz_cell.add_pride(None, self)
-        carviz_cell = np.random.choice(self.get_neighbors(carviz_cell,
-                                                          self.num_cells, "land"))
-        carviz_cell.add_pride(None, self)
+        # start_cell.add_herd(None, self)
+        # carviz_cell = np.random.choice(self.get_neighbors(start_cell,
+        #                                                   self.num_cells, "land"))
+        # carviz_cell.add_pride(None, self)
+        # carviz_cell = np.random.choice(self.get_neighbors(carviz_cell,
+        #                                                   self.num_cells, "land"))
+        # carviz_cell.add_pride(None, self)
+        # carviz_cell = np.random.choice(self.get_neighbors(carviz_cell,
+        #                                                   self.num_cells, "land"))
+        # carviz_cell.add_pride(None, self)
         return start_cell
 
     def day(self, frame, to_track=None, cancel=False):
@@ -143,6 +140,8 @@ class World:
         if frame <= len(DAY_BY_DAY_RESULTS)-1:
             self.plot_old(frame)
         else:
+            if frame%100 == 0:
+                self.update_animals_indexes()
             self.day_events(frame)
             self.plot_new(frame)
 
@@ -154,8 +153,11 @@ class World:
             for cell in row:
                 population = cell.population()
                 if cell.vegetob: cell.vegetob.grow()
-                if cell.herd: cell.herd.grow(cell)
-                if cell.pride: cell.pride.grow(cell)
+                # if cell.herd: cell.herd.grow(cell)
+                # if cell.pride: cell.pride.grow(cell)
+        for animal in ANIMALS:
+            if animal.alive:
+                animal.grow()
         # Movement: The individuals of animal species decide if move in another
         # area. Movement is articulated as individual and social group movement,
         # in this phase it is also included Struggle, Fighting and Hunting.
@@ -163,6 +165,26 @@ class World:
             for cell in row:
                 if cell.herd: cell.herd.choose(frame)
                 if cell.pride: cell.pride.choose(frame)
+
+    def update_animals_indexes(self):
+        """Updates the indexes of the animals"""
+        i = 0
+        print(len(ANIMALS), end=" -> ")
+        for animal in list(ANIMALS):
+            if not animal.alive:
+                del ANIMALS[i]
+            else:
+                animal.id = i
+                i += 1
+
+        for row in self.grid:
+            for cell in row:
+                if cell.herd:
+                    cell.herd.clean(len(ANIMALS))
+                if cell.pride:
+                    cell.pride.clean(len(ANIMALS))
+
+        print(len(ANIMALS))
 
 
     def plot_old(self, frame):
@@ -216,6 +238,9 @@ class World:
         self.ax[1].set_ylabel("Number of animals")
         if num_erbasts+num_carvizes == 0 and frame != 0:
             self.fig.canvas.draw_idle()
+            fig, ax = plt.subplots()
+            ax.pie(CAUSE_OF_DEATH.values(), labels=CAUSE_OF_DEATH.keys())
+            plt.show()
             raise TotalExtinction
 
         # showing the tracked groups
@@ -229,7 +254,6 @@ class World:
                     X = [el[1].x for el in cell.pride.tracked if el[0] <= frame]
                     Y = [el[1].y for el in cell.pride.tracked if el[0] <= frame]
                     self.ax[0].plot(Y, X, "ro-", markersize=6, lw=3)
-
 
     def run(self, days=1000):
         ani = Interactive_Animation(self.fig, self.ax, self.day, mini=0,
@@ -259,11 +283,4 @@ class World:
                 if cell.pride and flag in [None, 'carvizes']:
                     res += cell.pride.get_energy()
         return res
-
-
-if __name__ == "__main__":
-    world = World(NUM_CELLS, NEIGHBORHOOD)
-    anim = world.run(DAYS)
-    plt.show()
-
 

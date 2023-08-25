@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 import numpy as np
-from Cell import Cell, Graveyard
-from World import World
+from Objects.Cell import Cell, Graveyard
+from Objects.World import World
 from errors import AlreadyDeadError
-
-COUNT = 1
+from variables import ANIMALS, CAUSE_OF_DEATH
 
 
 def part(n: float, m: int):
@@ -43,14 +42,18 @@ class Animal:
         self.age = 0
         self.pos = position
         self.world = world
-        self._id = id(self)
+        self._id = len(ANIMALS)
+        ANIMALS.append(self)
         self._alive = True
 
-    def __repr__(self):
-        return f"{self.__class__.__name__}({self.energy}, {self.lifetime}, " \
-               f"{self.social_attitude}, {self.pos}, {self.age})"
+    @property
+    def alive(self):
+        return self._alive
 
-    def grow(self, population):
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.pos}, {self.id}, {self._alive})"
+
+    def grow(self, population=0):
         # not to be confused with the grow method of Vegetob, this is just
         # changing the age of individual and checking if it's dead. This
         # function is called at the beginning of every turn and for convenience
@@ -59,7 +62,7 @@ class Animal:
         self.age += 1
         while self.energy >= 150:
             self.energy -= 50
-            self.age -= 1
+            self.lifetime += 1
 
 #         if not self._alive:
 #             raise Exception(f"{self} is already dead by \
@@ -86,6 +89,23 @@ class Erbast(Animal):
                  social_attitude: float, position: Cell, herd, world: World):
         super().__init__(energy, lifetime, social_attitude, position, world)
         self.herd = herd
+
+    @property
+    def id(self):
+        return self._id
+
+    @id.setter
+    def id(self, value):
+        try:
+            self.herd.remove(self)
+        except ValueError:
+            print("\n\nError in Erbast.id.setter")
+            print(self._id, end = " not in ")
+            print(self.herd.members_id)
+            print(self, self.herd, self.pos.herd)
+            raise ValueError
+        self._id = value
+        self.herd.add(self)
 
     def graze(self, quantity):
         self.energy += quantity
@@ -120,14 +140,17 @@ class Erbast(Animal):
             self.pos.add_herd(self.herd)
 
     def choose_erbast(self):
-        if np.random.random() > (1-self.social_attitude)/100:
+        if (self.herd.pos.vegetob.density*self.social_attitude >
+            self.pos.vegetob.density and self.energy >
+            self.herd.pos.vegetob.density and
+            len(self.herd)*self.social_attitude < 100):
             self.stay_with_herd()
         else:
             self.quit_herd()
 
     @classmethod
     def spawn(cls, pos: Cell, wrld):
-        return cls(100, 10, 0.8, pos, pos.herd, wrld)
+        return cls(1000, 100, 0.8, pos, pos.herd, wrld)
 
     def die(self, reason=None):
         if not self._alive:
@@ -135,27 +158,31 @@ class Erbast(Animal):
 {self.pos.reason_of_death}, and now {reason}")
         self._alive = False
         try:
-            self.herd.members.remove(self)
-        except ValueError:
-            print("Warning: dying Erbast not in their herd")
-            if len(self.herd.members) == 0:
-                self.pos.remove_herd()
-                del self.herd
-            else:
-                del self.herd.members[-1]
+            CAUSE_OF_DEATH[reason] += 1
+        except KeyError:
+            CAUSE_OF_DEATH[reason] = 1
+        # try:
+        #     self.herd.members.remove(self)
+        # except ValueError:
+        #     print("Warning: dying Erbast not in their herd")
+        #     if len(self.herd.members) == 0:
+        #         self.pos.remove_herd()
+        #         del self.herd
+        #     else:
+        #         del self.herd.members[-1]
+
+        self.herd.remove(self)
         # this partitions randomly the energy and lifetime of the ancestor to
         # the children
         if self.energy > 5 and reason not in ["overcrowding", "hunted_down"]:
             # print(self.energy*2, 2, "energy")
             # print(self.lifetime*2, 2, "lifetime")
-            for E, L in zip(part(self.energy*2, 2), part(self.lifetime*2, 2)):
-                if L < 2:
-                    continue
+            for E, L in zip(part(self.energy*1.2, 2), part(self.lifetime*2, 2)):
                 s_a = min(1, max(0.1, np.random.normal(self.social_attitude, 0.1)))
                 try:
                     self.herd.add(Erbast(E, L, s_a, self.herd.pos, self.herd, self.world))
-                except AssertionError:
-                    pass
+                except Exception as e:
+                    print(e)
 
         self.pos = Graveyard(self.pos.x, self.pos.y, reason)
         del self
@@ -167,6 +194,16 @@ class Carviz(Animal):
                  social_attitude: float, position: Cell, pride, world: World):
         super().__init__(energy, lifetime, social_attitude, position, world)
         self.pride = pride
+
+    @property
+    def id(self):
+        return self._id
+
+    @id.setter
+    def id(self, value):
+        self.pride.remove(self)
+        self._id = value
+        self.pride.add(self)
 
     def stay_with_pride(self):
         self.energy -= self.world.distance(self.pos, self.pride.pos)
@@ -214,15 +251,16 @@ class Carviz(Animal):
 {self.pos.reason_of_death}, and now {reason}\n\nself was in prides: \
 {inpride}\n and its pride is {self.pride} or {self.pos.pride if self.pos.pride else None}")
         self._alive = False
-        try:
-            self.pride.members.remove(self)
-        except ValueError:
-            print("OH NO!!!")
-            if len(self.pride.members) == 0:
-                self.pos.remove_pride()
-                del self.pride
-            else:
-                del self.pride.members[-1]
+        # try:
+        #     self.pride.members.remove(self)
+        # except ValueError:
+        #     print("OH NO!!!")
+        #     if len(self.pride.members) == 0:
+        #         self.pos.remove_pride()
+        #         del self.pride
+        #     else:
+        #         del self.pride.members[-1]
+        self.pride.remove(self)
         # this partitions randomly the energy and lifetime of the ancestor to
         # the children
         if self.energy > 5 and reason not in ["overcrowding", "fight"]:
@@ -230,8 +268,6 @@ class Carviz(Animal):
             # print(self.energy*2, 2, "energy")
             # print(self.lifetime*2, 2, "lifetime")
             for E, L in zip(part(self.energy*2, 3), part(self.lifetime*3, 3)):
-                if L < 2:
-                    continue
                 s_a = min(1, max(0.1, np.random.normal(self.social_attitude, 0.1)))
                 try:
                     self.pride.add(Carviz(E, L, s_a, self.pride.pos, self.pride, self.world))
@@ -248,13 +284,14 @@ class Group:
                  tracked=[]):
         self.pos = pos
         self.world = world
-        self.members = members
+        self._members = []
+        self.members_id = [m.id for m in members]
         self.past_cells = []
         self.memory = {}
         self.tracked = tracked
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(({self.pos.x}, {self.pos.y}), {len(self)} members)"
+        return f"{self.__class__.__name__}(({self.pos.x}, {self.pos.y}), {self.members_id})"
 
     def __eq__(self, other):
         if len(self) != len(other):
@@ -265,17 +302,25 @@ class Group:
         return True
 
     def __len__(self):
-        return len(self.members)
+        return len(self.members_id)
+
+    def __getitem__(self, key):
+        return ANIMALS[self.members_id[key]]
 
     def add(self, member: Carviz or Erbast):
-        self.members.append(member)
+        # print(f"ADDING {member.id} to {self}")
+        # self.members.append(member)
+        self.members_id.append(member.id)
 
     def remove(self, member: Carviz or Erbast):
-        self.members.remove(member)
+        # self.members.remove(member)
         # self.members = [m for m in self.members if m != member]
+        self.members_id = [m for m in self.members_id if m != member.id]
+        # self.members_id.remove(member.id)
 
     def join(self, other_group):
-        self.members += other_group.members
+        # self.members += other_group.members
+        self.members_id += other_group.members_id
         for key in other_group.memory:
             if key in self.memory and np.random.random() < 0.5:
                 self.memory[key] = other_group.memory[key]
@@ -283,6 +328,11 @@ class Group:
                 self.memory[key] = other_group.memory[key]
         del other_group
         return self
+
+    @property
+    def members(self):
+        for member_id in self.members_id:
+            yield ANIMALS[member_id]
 
     def add_energy(self, energy):
         extra = 0
@@ -300,6 +350,12 @@ class Group:
 
     def get_champion(self):
         return max(self.members, key=lambda m: m.energy if m._alive else 0)
+
+    def clean(self, max_id):
+        for member_id in list(self.members_id):
+            if member_id >= max_id:
+                self.members_id.remove(member_id)
+
 
 
 class Herd(Group):
@@ -343,7 +399,7 @@ class Herd(Group):
 
     def grow(self, cell):
         assert cell == self.pos, "Trying to grow in a cell that is not the current one"
-        if len(self.members) == 0:
+        if len(self) == 0:
             self.pos.herd = None
         else:
             population = cell.population()
@@ -351,7 +407,7 @@ class Herd(Group):
                 if erbast._alive:
                     erbast.grow(population)
                 else:
-                    cell.herd.members.remove(erbast)
+                    cell.herd.remove(erbast)
 
 
 class Pride(Group):
@@ -435,7 +491,7 @@ he got killed also by a different pride)...")
 
     def grow(self, cell):
         assert cell == self.pos, "Trying to grow in a cell that is not the current one"
-        if len(self.members) == 0:
+        if len(self) == 0:
             self.pos.pride = None
         else:
             population = cell.population()
@@ -443,4 +499,4 @@ he got killed also by a different pride)...")
                 if carviz._alive:
                     carviz.grow(population)
                 else:
-                    cell.pride.members.remove(carviz)
+                    cell.pride.remove(carviz)

@@ -6,7 +6,7 @@ import numpy as np
 class Interactive_Animation(FuncAnimation):
     def __init__(self, fig, ax, func, frames=None, init_func=None, fargs=None,
                  save_count=None, mini=0, maxi=100, pos=(0.125, 0.835),
-                 interval=10, **kwargs):
+                 interval=500, **kwargs):
         self.i = 0
         self.min=mini
         self.max=maxi
@@ -86,7 +86,6 @@ class Interactive_Animation(FuncAnimation):
             elif event.button == 3:
                 self.func(self.i, cancel=True)
                 self.fig.canvas.draw_idle()
-
 
 
     def setup(self, pos):

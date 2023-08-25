@@ -1,12 +1,9 @@
 #!/usr/bin/env python
-from matplotlib import pyplot as pp
-import numpy as np
-from objects import World
-
-NUMCELLS = 10
-NEIGHBORHOOD = 1
+from matplotlib import pyplot as plt
+from Objects import World
+from variables import NUM_CELLS, NEIGHBORHOOD, DAYS
 
 if __name__ == "__main__":
-    world = World.World(NUMCELLS, NEIGHBORHOOD)
-    anim = world.run(300)
+    world = World.World(NUM_CELLS, NEIGHBORHOOD)
+    anim = world.run(DAYS)
     plt.show()
