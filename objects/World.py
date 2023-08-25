@@ -9,6 +9,8 @@ from numpy import random as rd
 from Cell import Cell
 from matplotlib import pyplot as plt
 from errors import *
+from variables import CAUSE_OF_DEATH
+from collections import Counter
 
 DAYS = 1000
 
@@ -84,6 +86,7 @@ class World:
             if cell in done:
                 continue
             cell.spawn_vegetob(rd.randint(0, 100))
+            cell.add_herd(None, self)
             done.append(cell)
             for neighbor in self.get_adjacent(cell):
                 if neighbor in done:
@@ -112,7 +115,6 @@ class World:
         status = np.dstack((z, z, vegetob))
         DAY_BY_DAY_RESULTS.append((status, (0, 0, 0)))
 
-        start_cell.add_herd(None, self)
         carviz_cell = np.random.choice(self.get_neighbors(start_cell, 5, "land"))
         # carviz_cell.add_pride(None, self)
         return start_cell
@@ -192,10 +194,14 @@ class World:
         self.ax[1].set_xlabel("Days")
         self.ax[1].set_ylabel("Number of animals")
         if num_erbasts+num_carvizes == 0 and frame != 0:
+            fig, ax = plt.subplots()
+            c = Counter(CAUSE_OF_DEATH)
+            ax.pie(c.values(), labels=c.keys())
+            plt.show()
             raise TotalExtinction
 
     def run(self, days=1000):
-        ani = Interactive_Animation(self.fig, self.day, mini=0, maxi=10000,
+        ani = Interactive_Animation(self.fig, self.day, mini=0, maxi=days,
                                     cache_frame_data=False, interval=10)
         return ani
 
@@ -215,6 +221,5 @@ class World:
 
 if __name__ == "__main__":
     world = World(NUM_CELLS, NEIGHBORHOOD)
-    anim = world.run(300)
+    anim = world.run(DAYS)
     plt.show()
-

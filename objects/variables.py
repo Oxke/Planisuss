@@ -1,0 +1,1 @@
+CAUSE_OF_DEATH = []

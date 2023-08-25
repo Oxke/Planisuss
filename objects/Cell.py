@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from numpy.random import randint
+
 class Cell:
     """Class representing a cell in the world
     A cell can contain a vegetob, a herd of erbast and a pride of carviz"""
@@ -23,7 +25,7 @@ class Cell:
         if world:
             erbast = __import__("Ecosystem").Erbast.spawn(self, world)
             self.herd = __import__("Ecosystem").Herd([erbast], self, world)
-            self.herd.members[0].herd = self.herd
+            self.herd[-1].herd = self.herd
         elif self.herd:
             if self.herd != herd:
                 self.herd = self.herd.join(herd)

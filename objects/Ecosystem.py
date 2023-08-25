@@ -2,6 +2,8 @@
 import numpy as np
 from Cell import Cell, Graveyard
 from World import World
+from variables import CAUSE_OF_DEATH
+
 
 ANIMALS = {}
 COUNT = 1
@@ -26,7 +28,9 @@ class Vegetob:
         if self.density < 1:
             self.density = 1
         else:
-            self.density += self.density * (100 - self.density) / 10000
+            # self.density += self.density * (100 - self.density) / 10000
+            # self.density += (100 - self.density)/10
+            self.density += self.density * (100 - self.density)**2 / 100000
 
 
 class Animal:
@@ -60,10 +64,17 @@ class Animal:
         # function is called at the beginning of every turn and for convenience
         # has the same name as the grow method of Vegetob
         self.age += 1
-        overcrowding = np.random.random() / self.social_attitude * \
-        self.pos.population >= 100
+        # overcrowding = np.random.random() / self.social_attitude * \
+        # self.pos.population >= 100
+        overcrowding = False
         overage = self.age > self.lifetime
         lack_energy = np.random.random()*self.energy < 5
+        if overcrowding:
+            CAUSE_OF_DEATH.append("overcrowding")
+        if overage:
+            CAUSE_OF_DEATH.append("overage")
+        if lack_energy:
+            CAUSE_OF_DEATH.append("lack_energy")
         if overcrowding or overage or lack_energy:
             self.die(overcrowding)
 
@@ -73,22 +84,18 @@ class Animal:
         try:
             del ANIMALS[self.id]
         except KeyError:
-            print("FUCK")
+            print("OH NO")
 
         # this partitions randomly the energy and lifetime of the ancestor to
         # the children
         if self.energy > 5 and not overcrowded:
-            COUNT += 2
-            for E, L in zip(part(self.energy*2, 2), part(self.lifetime*2, 2)):
+            for E, L in zip(part(self.energy, 2), part(self.lifetime*2, 2)):
                 s_a = min(1, max(0.1, np.random.normal(self.social_attitude, 0.1)))
                 if isinstance(self, Erbast):
                     self.herd.add(Erbast(E, L, s_a, self.herd.pos, self.herd, self.world))
                 elif isinstance(self, Carviz):
                     self.pride.add(Carviz(E, L, s_a, self.pride.pos, self.pride, self.world))
         self.pos = GRAVEYARD
-        COUNT -= 1
-        print(COUNT)
-        print(len(ANIMALS))
 
 
 class Erbast(Animal):
@@ -99,13 +106,14 @@ class Erbast(Animal):
         self.herd = herd
 
     def graze(self, quantity):
-        self.energy += quantity
+        self.energy += quantity // (self.age+1) * self.lifetime
         # self.pos.vegetob.density -= quantity
 
     def stay_with_herd(self):
         self.energy -= self.world.distance(self.pos, self.herd.pos)
         if self.energy <= 0:
             self.die()
+            CAUSE_OF_DEATH.append("lack_energy_movement")
         else:
             self.pos = self.herd.pos
 
@@ -117,6 +125,7 @@ class Erbast(Animal):
             self.energy -= self.world.distance(self.pos, destination)
             if self.energy <= 0:
                 self.die()
+                CAUSE_OF_DEATH.append("lack_energy_movement")
             else:
                 self.pos = destination
         if self.pos.herd:
@@ -137,8 +146,7 @@ class Erbast(Animal):
 
     @classmethod
     def spawn(cls, pos: Cell, wrld):
-        return cls(100, 10, 0.8, pos, pos.herd, wrld)
-
+        return cls(1000, 100, 0.8, pos, pos.herd, wrld)
 
 
 class Carviz(Animal):
@@ -186,7 +194,7 @@ class Group:
         self.pos = pos
         self.world = world
         self._members_id = [m.id for m in members]
-        self.members = members
+        self._members = []
         self.past_cells = []
         self.memory = {}
 
@@ -204,11 +212,25 @@ class Group:
     def __len__(self):
         return len(self._members_id)
 
+    def __getitem__(self, item):
+        return ANIMALS[self._members_id[item]]
+
+    @property
+    def members(self):
+        for mid in self._members_id:
+            try:
+                yield ANIMALS[mid]
+            except KeyError:
+                continue
+
     def add(self, member: Carviz or Erbast):
         self._members_id.append(member.id)
 
-    def remove(self, member: Carviz or Erbast):
-        self._members_id = [m for m in self._members_id if m != member.id]
+    def remove(self, member: Carviz or Erbast or int):
+        if isinstance(member, (Erbast, Carviz)):
+            member = member.id
+            # self._members_id = [mid for mid in self._members_id if mid != member.id]
+        self._members_id = [mid for mid in self._members_id if mid != member]
 
     def join(self, other_group):
         self._members_id += other_group._members_id
@@ -233,12 +255,11 @@ class Group:
             else:
                 self.pos.remove_pride()
 
-        for i, id_member in enumerate(self._members_id):
+        for i, id_member in enumerate(list(self._members_id)):
             try:
                 ANIMALS[id_member].grow()
             except KeyError:
-                self._members_id.remove(id_member)
-
+                self.remove(id_member)
 
     def proliferate(self):
         for member in list(self.members):  # list() is used to avoid changing the list while iterating over it
@@ -253,7 +274,7 @@ class Group:
                 self.add(Erbast(E, L, member.social_attitude, self.pos, self, self.world))
 
     def get_energy(self):
-        return sum([ANIMALS[mid].energy for mid in self._members_id])
+        return sum([m.energy for m in self.members])
 
     def get_sa(self):
         return np.array([ANIMALS[mid].social_attitude for mid in
@@ -278,39 +299,52 @@ class Herd(Group):
                 self.memory[cell] = cell.vegetob.density
 
     def move(self, new_cell):
+        for i, id_erbast in enumerate(list(self._members_id)):
+            try:
+                m = ANIMALS[id_erbast]
+            except KeyError:
+                self.remove(id_erbast)
+                continue
+            if m._alive:
+                m.choose()
+            else:
+                self.remove(id_erbast)
         if new_cell == self.pos:
-            for i, id_erbast in enumerate(self._members_id):
+            for i, id_erbast in enumerate(list(self._members_id)):
                 try:
                     m = ANIMALS[id_erbast]
                 except KeyError:
-                    self._members_id.remove(id_erbast)
+                    self.remove(id_erbast)
                     continue
                 if m._alive:
                     m.graze(min(1, self.pos.vegetob.density/len(self)))
                 else:
-                    self._members_id.remove(id_erbast)
+                    self.remove(id_erbast)
             self.pos.vegetob.density -= min(len(self), self.pos.vegetob.density)
         else:
             self.pos.remove_herd()
             self.pos = new_cell
             self.pos.add_herd(self)
-        for i, id_erbast in enumerate(self._members_id):
-            try:
-                m = ANIMALS[id_erbast]
-            except KeyError:
-                self._members_id.remove(id_erbast)
-                continue
-            if m._alive:
-                m.choose()
-            else:
-                self._members_id.remove(id_erbast)
+
+    def move_towards(self, new_cell):
+        if self.world.distance(self.pos, new_cell) <= 1:
+            self.move(self.pos)
+            return
+        neigh = self.world.get_neightbors(self.pos, flag="land")
+        actual_new_cell = neigh[np.argmin([self.world.distance(new_cell, n) for n in neigh])]
+        self.move(actual_new_cell)
+
+    def memory_value(self, cell):
+        if cell in self.memory: return self.memory[cell]
+        return 1
 
     def choose(self):
         self.check_near_cells()
-        if self.pos.vegetob.density < 10:
-            self.move(max(self.memory, key=self.memory.get))
+        if self.pos.vegetob.density < self.get_energy():
+            self.move(max(self.world.get_neighbors(self.pos, 3, flag="land"),
+                          key=self.memory_value))
         else:
-            self.move(self.pos)
+            self.move_towards(self.pos)
 
 
 class Pride(Group):
