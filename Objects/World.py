@@ -80,6 +80,7 @@ class World:
                 continue
             cell.spawn_vegetob(rd.randint(0, 100))
             cell.add_herd(None, self)
+            # cell.add_pride(None, self)
             done.append(cell)
             for neighbor in self.get_adjacent(cell):
                 if neighbor in done:
@@ -140,6 +141,7 @@ class World:
         self.plot(frame)
 
     def day_events(self, frame):
+        global ANIMALS
         """Function defining the events of the day"""
         # Growing: the vegetob grows everywhere, in this phase also all animals
         # age and eventually die.
@@ -161,6 +163,7 @@ class World:
                 if cell.pride: cell.pride.choose(frame)
 
     def update_animals_indexes(self):
+        global ANIMALS
         """Updates the indexes of the animals"""
         i = 0
         print(len(ANIMALS), end=" -> ")

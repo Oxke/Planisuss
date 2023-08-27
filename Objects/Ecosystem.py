@@ -108,26 +108,25 @@ class Erbast(Animal):
         self.herd.add(self)
 
     def graze(self, quantity):
-        self.energy += 10 * quantity // (self.age+1) * self.lifetime
+        self.energy += 4 * quantity // (self.age+1) * self.lifetime
         # self.energy += quantity
         # self.pos.vegetob.density -= quantity
 
     def stay_with_herd(self, new_herd_pos):
-        self.energy -= self.age**2 * self.world.distance(self.pos, new_herd_pos)
+        self.energy -= self.world.distance(self.pos, new_herd_pos)
         if self.energy <= 0:
             # self.die("lack_energy_movement")
-            pass
-        else:
-            self.pos = new_herd_pos
+            return
+        self.pos = new_herd_pos
 
     def quit_herd(self):
         self.herd.remove(self)
         if not self._alive:
             return
         if self.energy > self.pos.vegetob.density:
-            destination = np.random.choice(self.world.get_adjacent(self.pos,
+            destination = np.random.choice(self.world.get_neighbors(self.pos,
                                                                     flag="land"))
-            self.energy -= self.age**2 * self.world.distance(self.pos, destination)
+            self.energy -= self.world.distance(self.pos, destination)
             if self.energy <= 0:
                 # self.die("lack_energy_movement")
                 return
@@ -190,12 +189,20 @@ class Carviz(Animal):
 
     @id.setter
     def id(self, value):
-        self.pride.remove(self)
+        try:
+            self.pride.remove(self)
+        except ValueErrr:
+            print("\n\nError in Carviz.id.setter")
+            print(self._id, end = " not in ")
+            print(self.pride.members_id)
+            print(self, self.pride, self.pos.pride)
+            raise ValueError
+
         self._id = value
         self.pride.add(self)
 
-    def stay_with_pride(self):
-        self.energy -= self.world.distance(self.pos, self.pride.pos)
+    def stay_with_pride(self, new_pride_pos):
+        self.energy -= self.world.distance(self.pos, new_pride_pos)
         if self.energy <= 0:
             # self.die("lack_energy_movement")
             return
@@ -203,7 +210,9 @@ class Carviz(Animal):
 
     def quit_pride(self):
         self.pride.remove(self)
-        if self.energy > 10:
+        if not self._alive:
+            return
+        if self.energy > self.pos.herd.get_energy():
             destination = np.random.choice(self.world.get_neighbors(self.pos,
                                                                     flag="land"))
             self.energy -= self.world.distance(self.pos, destination)
@@ -346,7 +355,6 @@ class Group:
         for member_id in list(self.members_id):
             if member_id >= max_id:
                 self.members_id.remove(member_id)
-
 
 
 class Herd(Group):
