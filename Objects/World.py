@@ -19,7 +19,7 @@ class World:
         self.grid = np.array([[Cell(x, y) for y in range(self.num_cells)]
                      for x in range(self.num_cells)])
         self.pseudocenter = self.start_life()
-        self.fig, self.ax = self.plot_new(0, create=True)
+        self.fig, self.ax = self.create_plot()
 
     def __repr__(self):
         return f"World({str(self.num_cells)}, {str(self.pseudocenter)})"
@@ -137,13 +137,7 @@ class World:
                     if cell.herd: cell.herd.tracked = []
                     if cell.pride: cell.pride.tracked = []
 
-        if frame <= len(DAY_BY_DAY_RESULTS)-1:
-            self.plot_old(frame)
-        else:
-            if frame%100 == 0:
-                self.update_animals_indexes()
-            self.day_events(frame)
-            self.plot_new(frame)
+        self.plot(frame)
 
     def day_events(self, frame):
         """Function defining the events of the day"""
@@ -186,7 +180,6 @@ class World:
 
         print(len(ANIMALS))
 
-
     def plot_old(self, frame):
         self.fig.suptitle(f"Planisuss: Day {frame}", fontsize=24)
         self.ax[0].clear()
@@ -200,33 +193,51 @@ class World:
         self.ax[1].plot([x[1][1] for x in DAY_BY_DAY_RESULTS], 'r', label=f"Carvizes: {num_carvizes}")
         self.ax[1].legend()
 
-    def plot_new(self, frame, create=False):
+    def create_plot(self):
+        return plt.subplots(1, 2, figsize=(20, 10))
+
+    def plot(self, frame, create=False):
         """Plots the world"""
-        water = np.array([[cell.water for cell in row] for row in self.grid])
-        vegetob = np.array([[0 if cell.vegetob is None else cell.vegetob.density/100
-                    for cell in row] for row in self.grid])
-        erbasts = np.array([[0 if cell.herd is None else min(len(cell.herd)/4, 1.0)
-                    for cell in row] for row in self.grid])
-        carvizes = np.array([[0 if cell.pride is None else min(len(cell.pride)/4, 1.0)
-                    for cell in row] for row in self.grid])
-        if create:
-            fig, ax = plt.subplots(1, 2, figsize=(20, 10))
-            fig.suptitle("Planisuss: Day 0", fontsize=24)
-            ax[0].axis('off')
-            return fig, ax
-        self.fig.suptitle(f"Planisuss: Day {frame}", fontsize=24)
+
+        # Time in years, months, days format
+        ez_time = ""
+        if frame >= 365:
+            ez_time += f"({frame//365} years"
+        if frame%365 >= 30:
+            ez_time = ", " if ez_time else "("
+            ez_time += f"{frame%365//30} months"
+        if frame%30 >= 1 and ez_time:
+            ez_time += f", {frame%30} days"
+        if ez_time:
+            ez_time += ")"
+
+        if len(DAY_BY_DAY_RESULTS) <= frame:
+            if not frame % 100:
+                self.update_animals_indexes()
+            self.day_events(frame)
+
+            water = np.array([[cell.water for cell in row] for row in self.grid])
+            vegetob = np.array([[0 if cell.vegetob is None else cell.vegetob.density/100
+                        for cell in row] for row in self.grid])
+            erbasts = np.array([[0 if cell.herd is None else min(len(cell.herd)/4, 1.0)
+                        for cell in row] for row in self.grid])
+            carvizes = np.array([[0 if cell.pride is None else min(len(cell.pride)/4, 1.0)
+                        for cell in row] for row in self.grid])
+            num_erbasts = self.total_animals("erbasts")
+            num_carvizes = self.total_animals("carvizes")
+
+            status = np.dstack((carvizes+water, erbasts+water, vegetob+water))
+            DAY_BY_DAY_RESULTS.append((status, (num_erbasts, num_carvizes)))
+        else:
+            status, (num_erbasts, num_carvizes) = DAY_BY_DAY_RESULTS[frame]
+
+
+        self.fig.suptitle(f"Planisuss: Day {frame} {ez_time}", fontsize=24)
         self.ax[0].clear()
         self.ax[0].axis("off")
-        self.ax[1].clear()
-        status = np.dstack((carvizes+water, erbasts+water, vegetob+water))
         self.ax[0].imshow(status)
 
-        num_erbasts = self.total_animals("erbasts")
-        num_carvizes = self.total_animals("carvizes")
-
-        DAY_BY_DAY_RESULTS.append((status, (num_erbasts, num_carvizes,
-                                            num_erbasts+num_carvizes)))
-
+        self.ax[1].clear()
         self.ax[1].plot([x[1][0] for x in DAY_BY_DAY_RESULTS], 'g',
                         label=f"Erbasts: {num_erbasts}")
         self.ax[1].plot([x[1][1] for x in DAY_BY_DAY_RESULTS], 'r',
@@ -236,9 +247,12 @@ class World:
         self.ax[1].legend()
         self.ax[1].set_xlabel("Days")
         self.ax[1].set_ylabel("Number of animals")
+
         if num_erbasts+num_carvizes == 0 and frame != 0:
             self.fig.canvas.draw_idle()
             fig, ax = plt.subplots()
+            fig.suptitle("(Animal) Life got extinct, here are the causes:",
+                         fontsize=16)
             ax.pie(CAUSE_OF_DEATH.values(), labels=CAUSE_OF_DEATH.keys())
             plt.show()
             raise TotalExtinction

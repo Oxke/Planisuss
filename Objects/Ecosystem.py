@@ -26,13 +26,15 @@ class Vegetob:
         if self.density < 1:
             self.density = 1
         else:
-            self.density += self.density * (100 - self.density) / 10000
+            # self.density += self.density * (100 - self.density) / 10000
+            self.density += self.density * (100 - self.density)**2 / 100000
 
 
 class Animal:
     """Parent class of both Carviz and Erbast"""
     def __init__(self, energy: int, lifetime: int, social_attitude: float,
                  position: Cell, world: World):
+        global ANIMALS
         assert energy >= 0, "Animal was born dead"
         assert lifetime >= 0, "Animal should have already died"
         assert 0 <= social_attitude <= 1, "Social Attitude not valid"
@@ -64,12 +66,10 @@ class Animal:
             self.energy -= 50
             self.lifetime += 1
 
-#         if not self._alive:
-#             raise Exception(f"{self} is already dead by \
-# {self.pos.reason_of_death}")
-
-        overcrowding = np.random.random() / self.social_attitude * \
-            population >= 100
+        # While the making of the project, I considered the possibility of
+        # having an overcrowding mechanic, it turned out it wasn't necessary but
+        # in case I want to implement it in the future, I'll leave this code
+        overcrowding = False
         overage = self.age >= self.lifetime
         lack_energy = np.random.random()*self.energy < 5
 
@@ -108,16 +108,17 @@ class Erbast(Animal):
         self.herd.add(self)
 
     def graze(self, quantity):
-        self.energy += quantity
+        self.energy += 10 * quantity // (self.age+1) * self.lifetime
+        # self.energy += quantity
         # self.pos.vegetob.density -= quantity
 
-    def stay_with_herd(self):
-        self.energy -= self.age**2 * self.world.distance(self.pos, self.herd.pos)
+    def stay_with_herd(self, new_herd_pos):
+        self.energy -= self.age**2 * self.world.distance(self.pos, new_herd_pos)
         if self.energy <= 0:
             # self.die("lack_energy_movement")
             pass
         else:
-            self.pos = self.herd.pos
+            self.pos = new_herd_pos
 
     def quit_herd(self):
         self.herd.remove(self)
@@ -139,12 +140,12 @@ class Erbast(Animal):
                              list(self.herd.tracked))
             self.pos.add_herd(self.herd)
 
-    def choose_erbast(self):
-        if (self.herd.pos.vegetob.density*self.social_attitude >
+    def choose_erbast(self, new_herd_pos):
+        if (new_herd_pos.vegetob.density*self.social_attitude >
             self.pos.vegetob.density and self.energy >
-            self.herd.pos.vegetob.density and
+            new_herd_pos.vegetob.density and
             len(self.herd)*self.social_attitude < 100):
-            self.stay_with_herd()
+            self.stay_with_herd(new_herd_pos)
         else:
             self.quit_herd()
 
@@ -161,23 +162,11 @@ class Erbast(Animal):
             CAUSE_OF_DEATH[reason] += 1
         except KeyError:
             CAUSE_OF_DEATH[reason] = 1
-        # try:
-        #     self.herd.members.remove(self)
-        # except ValueError:
-        #     print("Warning: dying Erbast not in their herd")
-        #     if len(self.herd.members) == 0:
-        #         self.pos.remove_herd()
-        #         del self.herd
-        #     else:
-        #         del self.herd.members[-1]
-
         self.herd.remove(self)
         # this partitions randomly the energy and lifetime of the ancestor to
         # the children
         if self.energy > 5 and reason not in ["overcrowding", "hunted_down"]:
-            # print(self.energy*2, 2, "energy")
-            # print(self.lifetime*2, 2, "lifetime")
-            for E, L in zip(part(self.energy*1.2, 2), part(self.lifetime*2, 2)):
+            for E, L in zip(part(self.energy, 2), part(self.lifetime*2, 2)):
                 s_a = min(1, max(0.1, np.random.normal(self.social_attitude, 0.1)))
                 try:
                     self.herd.add(Erbast(E, L, s_a, self.herd.pos, self.herd, self.world))
@@ -305,6 +294,7 @@ class Group:
         return len(self.members_id)
 
     def __getitem__(self, key):
+        global ANIMALS
         return ANIMALS[self.members_id[key]]
 
     def add(self, member: Carviz or Erbast):
@@ -331,6 +321,7 @@ class Group:
 
     @property
     def members(self):
+        global ANIMALS
         for member_id in self.members_id:
             yield ANIMALS[member_id]
 
@@ -367,13 +358,30 @@ class Herd(Group):
 
     def check_near_cells(self):
         # Can still go to far cells but each time is preferable to stay near, if
-        # less than some threshold it might be forgotten (TODO)
-        self.memory = {c: d/2 for c, d in self.memory.items()}
+        # less than a threshold it gets forgotten
+        self.memory = {c: d/2 for c, d in self.memory.items() if d > 1}
         for cell in self.world.get_neighbors(self.pos):
             if cell.vegetob:
                 self.memory[cell] = cell.vegetob.density
 
+    def memory_value(self, cell):
+        if cell in self.memory: return self.memory[cell]
+        return 1
+
+    def move_towards(self, new_cell):
+        if self.world.distance(self.pos, new_cell) <= 1:
+            self.move(self.pos)
+            return
+        neigh = self.world.get_neighbors(self.pos, flag="land")
+        actual_new_cell = neigh[np.argmin([self.world.distance(new_cell, n) for n in neigh])]
+        self.move(actual_new_cell)
+
     def move(self, new_cell):
+        for erbast in list(self.members):
+            if erbast._alive:
+                erbast.choose_erbast(new_cell)
+            else:
+                self.remove(erbast)
         if new_cell == self.pos:
             for erbast in self.members:
                 erbast.graze(min(1, self.pos.vegetob.density/len(self)))
@@ -382,16 +390,11 @@ class Herd(Group):
             self.pos.remove_herd()
             self.pos = new_cell
             self.pos.add_herd(self)
-        for erbast in list(self.members):
-            if erbast._alive:
-                erbast.choose_erbast()
-            else:
-                self.remove(erbast)
 
     def choose(self, i):
         self.check_near_cells()
-        if self.pos.vegetob.density < 10 and len(self.memory) > 0:
-            self.move(max(self.memory, key=self.memory.get))
+        if self.pos.vegetob.density < self.get_energy() and len(self.memory) > 0:
+            self.move_towards(max(self.memory, key=self.memory_value))
         else:
             self.move(self.pos)
         if self.tracked:
