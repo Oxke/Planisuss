@@ -13,7 +13,8 @@ def part(n: int, m: int):
     if m == 1:
         return [n]
     i = np.random.randint(1, n-m+2)
-    return [i, *part(n-i, m-1)]
+    return [*part(i, m//2), *part(n-i, m//2+m%2)]
+    # return [i, *part(n-i, m-1)]
 
 
 class Vegetob:
@@ -213,11 +214,13 @@ class Group:
         return len(self._members_id)
 
     def __getitem__(self, item):
+        global ANIMALS
         return ANIMALS[self._members_id[item]]
 
     @property
     def members(self):
         for mid in self._members_id:
+            global ANIMALS
             try:
                 yield ANIMALS[mid]
             except KeyError:
@@ -241,6 +244,7 @@ class Group:
         return self
 
     def add_energy(self, energy):
+        global ANIMALS
         extra = 0
         for mid, en in zip(self._members_id, part(energy, len(self))):
             en += extra
@@ -393,5 +397,6 @@ class Pride(Group):
             prey = self.pos.herd.get_champion()
             self.add_energy(prey.energy)
             prey.die()
+
 
 
