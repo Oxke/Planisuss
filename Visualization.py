@@ -7,6 +7,7 @@ class Interactive_Animation(FuncAnimation):
     def __init__(self, fig, ax, func, frames=None, init_func=None, fargs=None,
                  save_count=None, mini=0, maxi=100, pos=(0.125, 0.835),
                  interval=500, **kwargs):
+        self.pressed = []
         self.i = 0
         self.min=mini
         self.max=maxi
@@ -83,11 +84,23 @@ class Interactive_Animation(FuncAnimation):
         elif not_on_buttons and event.xdata and not self.runs:
             if event.button == 1:
                 self.func(self.i, (round(event.ydata), round(event.xdata)))
+                self.pressed = [(round(event.ydata), round(event.xdata))]
             elif event.button == 3:
-                self.func(self.i, cancel=(round(event.ydata),
-                                          round(event.xdata)),
+                self.func(self.i, bomb=(round(event.ydata), round(event.xdata)),
                           big=event.dblclick)
                 self.fig.canvas.draw_idle()
+
+    def on_move(self, event):
+        on_left = 2*event.x < self.fig.get_figwidth()*self.fig.get_dpi()
+        not_on_buttons = 0.001 < event.y < 0.83*self.fig.get_figheight()*self.fig.get_dpi()
+        if self.pressed and event.xdata and on_left and not_on_buttons:
+            self.pressed.append((round(event.ydata), round(event.xdata)))
+
+    def on_release(self, event):
+        shift = 'shift' in event.modifiers
+        self.func(self.i, change_geology=self.pressed, invert=shift)
+        self.pressed = []
+        self.fig.canvas.draw_idle()
 
     def on_keypress(self, event):
         if event.key == 'right':
@@ -99,6 +112,9 @@ class Interactive_Animation(FuncAnimation):
                 self.stop()
             else:
                 self.start()
+        elif event.key == 'c':
+            self.func(self.i, track_cancel=True)
+            self.fig.canvas.draw_idle()
 
     def setup(self, pos):
         playerax = self.fig.add_axes([pos[0],pos[1], 0.352, 0.04])
@@ -122,5 +138,7 @@ class Interactive_Animation(FuncAnimation):
         self.slider_speed.on_changed(self.changespeed)
         conn_click = self.fig.canvas.mpl_connect("button_press_event", self.onclick)
         conn_space = self.fig.canvas.mpl_connect("key_press_event", self.on_keypress)
+        conn_release = self.fig.canvas.mpl_connect("button_release_event", self.on_release)
+        conn_move = self.fig.canvas.mpl_connect("motion_notify_event", self.on_move)
 
 

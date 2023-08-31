@@ -131,20 +131,30 @@ class World:
     #         c.spawn_vegetob(rd.randint(0, 100))
 
 
-    def day(self, frame, to_track=None, cancel=None, big=False):
+    def day(self, frame, to_track=None, change_geology=[], bomb=None, big=False,
+            track_cancel=False, invert=False):
         """Main function for the simulation, it runs a day or plots a previous
         day if already simulated"""
         if to_track:
             c = self.grid[to_track]
-            # if c.vegetob: c.vegetob.density=100
             if c.herd: c.herd.tracked = [] if c.herd.tracked else [(frame, c)]
             if c.pride: c.pride.tracked = [] if c.pride.tracked else [(frame, c)]
-            if c.water:
+
+        for coordinates in change_geology:
+            c = self.grid[coordinates]
+            if c.water and not invert:
                 c.water = False
                 c.spawn_vegetob(rd.randint(0,100))
+                DAY_BY_DAY_RESULTS[frame][0][c.x, c.y, :] = 0
+            elif not c.water and invert:
+                c.water = True
+                c.vegetob = None
+                if c.herd: c.herd.suppress()
+                if c.pride: c.pride.suppress()
+                DAY_BY_DAY_RESULTS[frame][0][c.x, c.y, :] = 1
 
-        if cancel:
-            center = self.grid[cancel]
+        if bomb:
+            center = self.grid[bomb]
             divisor = 3 if big else 10
             for c in self.get_neighbors(center, self.num_cells//divisor):
                 if c.vegetob: c.vegetob.suppress()
@@ -152,22 +162,21 @@ class World:
                 if c.pride: c.pride.suppress()
                 DAY_BY_DAY_RESULTS[frame][0][c.x, c.y, :] = 1 if c.water else 0
 
-        # if cancel:
-        #     for row in self.grid:
-        #         for cell in row:
-        #             if cell.herd: cell.herd.tracked = []
-        #             if cell.pride: cell.pride.tracked = []
+        if track_cancel:
+            for row in self.grid:
+                for cell in row:
+                    if cell.herd: cell.herd.tracked = []
+                    if cell.pride: cell.pride.tracked = []
 
         self.plot(frame)
 
     def day_events(self, frame):
         global ERBASTS, CARVIZES
         """Function defining the events of the day"""
-        # Growing: the vegetob grows everywhere, in this phase also all animals
+        # Growing: the vegetob grows etverywhere, in this phase also all animals
         # age and eventually die.
         for row in self.grid:
             for cell in row:
-                population = cell.population()
                 if cell.vegetob: cell.vegetob.grow()
 
         for animal in ERBASTS+CARVIZES:
@@ -210,19 +219,6 @@ class World:
 
         print(f"{len(CARVIZES)}, {len(ERBASTS)}")
 
-    def plot_old(self, frame):
-        self.fig.suptitle(f"Planisuss: Day {frame}", fontsize=24)
-        self.ax[0].clear()
-        self.ax[0].axis("off")
-        self.ax[1].clear()
-        status = DAY_BY_DAY_RESULTS[frame][0]
-        self.ax[0].imshow(status)
-        num_erbasts, num_carvizes, num_total = DAY_BY_DAY_RESULTS[frame][1]
-        self.ax[1].axvline(x=frame, c="b", lw=2, label="TODAY")
-        self.ax[1].plot([x[1][0] for x in DAY_BY_DAY_RESULTS], 'g', label=f"Erbasts: {num_erbasts}")
-        self.ax[1].plot([x[1][1] for x in DAY_BY_DAY_RESULTS], 'r', label=f"Carvizes: {num_carvizes}")
-        self.ax[1].legend()
-
     def create_plot(self):
         return plt.subplots(1, 2, figsize=(20, 10))
 
@@ -236,8 +232,8 @@ class World:
         if frame%365 >= 30:
             ez_time += ", " if ez_time else "("
             ez_time += f"{frame%365//30} months"
-        if frame%30 >= 1 and ez_time:
-            ez_time += f", {frame%30} days"
+        if frame%365%30 >= 1 and ez_time:
+            ez_time += f", {frame%365%30} days"
         if ez_time:
             ez_time += ")"
 
