@@ -84,9 +84,21 @@ class Interactive_Animation(FuncAnimation):
             if event.button == 1:
                 self.func(self.i, (round(event.ydata), round(event.xdata)))
             elif event.button == 3:
-                self.func(self.i, cancel=True)
+                self.func(self.i, cancel=(round(event.ydata),
+                                          round(event.xdata)),
+                          big=event.dblclick)
                 self.fig.canvas.draw_idle()
 
+    def on_keypress(self, event):
+        if event.key == 'right':
+            self.oneforward()
+        elif event.key == 'left':
+            self.onebackward()
+        elif event.key == ' ':
+            if self.runs:
+                self.stop()
+            else:
+                self.start()
 
     def setup(self, pos):
         playerax = self.fig.add_axes([pos[0],pos[1], 0.352, 0.04])
@@ -108,5 +120,7 @@ class Interactive_Animation(FuncAnimation):
         speedax = self.fig.add_axes([pos[0],0.08, 0.3527, 0.07])
         self.slider_speed = Slider(speedax, "Animation Speed", -2, 1, valinit=0)
         self.slider_speed.on_changed(self.changespeed)
-        cid = self.fig.canvas.mpl_connect("button_press_event", self.onclick)
+        conn_click = self.fig.canvas.mpl_connect("button_press_event", self.onclick)
+        conn_space = self.fig.canvas.mpl_connect("key_press_event", self.on_keypress)
+
 

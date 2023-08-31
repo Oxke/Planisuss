@@ -1,13 +1,14 @@
 import argparse
-ANIMALS = []
+CARVIZES = []
+ERBASTS = []
 
 DAYS = 10000
 
 NUM_CELLS = 50
 NEIGHBORHOOD = 1
 DAY_BY_DAY_RESULTS = []
-CAUSE_OF_DEATH = {}
-
+CAUSE_OF_DEATH = {"Erbast": {},
+                  "Carviz": {}}
 desc = 'Simulation of a three-species ecosystem: Vegetobs, Erbasts and \
 Carvizes; which are respectevely plants, herbivores and carnivores.'
 
