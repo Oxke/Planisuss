@@ -80,7 +80,7 @@ class World:
                 continue
             cell.spawn_vegetob(rd.randint(0, 100))
             cell.add_herd(None, self)
-            # cell.add_pride(None, self)
+            cell.add_pride(None, self)
             done.append(cell)
             for neighbor in self.get_adjacent(cell):
                 if neighbor in done:
@@ -110,31 +110,20 @@ class World:
         DAY_BY_DAY_RESULTS.append((status, (0, 0, 0)))
         return start_cell
 
-    # def bfs_to_earth(self, cell: Cell):
-    #     """greedy algorithm that finds a likely to be shortest path to the
-    #     nearest land cell"""
-    #     queue = [cell]
-    #     done = []
-    #     while len(queue) > 0:
-    #         cell = queue.pop(0)
-    #         if cell in done:
-    #             continue
-    #         if not cell.water:
-    #             break
-    #         done.append(cell)
-    #         for neighbor in self.get_adjacent(cell):
-    #             if neighbor in done:
-    #                 continue
-    #             queue.append(neighbor)
-    #     for c in done:
-    #         c.water = False
-    #         c.spawn_vegetob(rd.randint(0, 100))
-
-
-    def day(self, frame, to_track=None, change_geology=[], bomb=None, big=False,
-            track_cancel=False, invert=False):
+    def day(self, frame, to_track=None, change_geology=[], invert=False,
+            bomb=None, big=False, track_cancel=False):
         """Main function for the simulation, it runs a day or plots a previous
-        day if already simulated"""
+        day if already simulated
+        Args:
+            frame: the day to simulate or plot
+            to_track: the cell where the herd and/or pride to track is situated
+            change_geology: a list of coordinates of cells to change the
+                geology, i.e. to make them water or land, default makes water
+                land, unless invert is True
+            invert: if True, the change_geology list is used to make land water
+            bomb: destroys te cells near to the coordinates given
+            big: if True, the bomb is bigger (radius approximately 1/3 of the
+            world size, wrt to the default 1/10) """
         if to_track:
             c = self.grid[to_track]
             if c.herd: c.herd.tracked = [] if c.herd.tracked else [(frame, c)]
@@ -279,10 +268,12 @@ class World:
             fig, ax = plt.subplots(1, 3)
             fig.suptitle("(Animal) Life got extinct, here are the causes:",
                          fontsize=16)
-            ax[1].pie(CAUSE_OF_DEATH["Erbast"].values(),
-                      labels=CAUSE_OF_DEATH["Erbast"].keys())
-            ax[2].pie(CAUSE_OF_DEATH["Carviz"].values(),
-                      labels=CAUSE_OF_DEATH["Carviz"].keys())
+            erb_causes = CAUSE_OF_DEATH["Erbast"]
+            car_causes = CAUSE_OF_DEATH["Carviz"]
+            ax[1].pie(erb_causes.values(), labels=erb_causes.keys())
+            ax[2].pie(car_causes.values(), labels=car_causes.keys())
+            ax[0].pie([*erb_causes.values(), *car_causes.values()],
+                      labels=[*erb_causes.keys(), *car_causes.keys()])
             plt.show()
             raise TotalExtinction
 

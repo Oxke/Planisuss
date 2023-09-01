@@ -276,7 +276,7 @@ class Carviz(Animal):
         if self.energy > 5 and reason not in ["overcrowding", "fight"]:
             # number = np.random.randint(2, 4)
             number = 2
-            for E, L in zip(part(self.energy*1.2, number),
+            for E, L in zip(part(self.energy, number),
                             part(self.lifetime*number, number)):
                 s_a = min(1, max(0.1, np.random.normal(self.social_attitude, 0.1)))
                 try:
@@ -503,7 +503,9 @@ class Pride(Group):
             self.tracked.append((i, self.pos))
 
     def fight(self, other_pride):
-        while len(self)*len(other_pride) > 0:
+        for _ in range(10):
+            if len(self) * len(other_pride)== 0:
+                break
             self_champion = self.get_champion()
             other_champion = other_pride.get_champion()
             try:
@@ -520,16 +522,18 @@ class Pride(Group):
             except AlreadyDeadError:
                 print("Just killed dead carviz, stopping the fight...")
                 break
+        else:
+            return self.join(other_pride)
+
         if len(self) > 0:
-            del other_pride
             return self
-        del self
         return other_pride
 
     def hunt(self):
         prey = self.pos.herd.get_champion()
         if prey.energy * np.random.random() < self.get_energy() * np.random.random():
-            self.add_energy(prey.energy)
+            # self.add_energy(prey.energy)
+            self.get_champion().energy += 100*prey.energy
             try:
                 prey.die("hunted_down")
             except AlreadyDeadError:
