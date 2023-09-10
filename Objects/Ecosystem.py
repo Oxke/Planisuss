@@ -331,12 +331,8 @@ class Group:
         return self
 
     def add_energy(self, energy):
-        extra = 0
-        for m, en in zip(self.members, part(energy, len(self))):
-            en += extra
-            extra = max(0, m.energy+en-1000)
-            en -= extra
-            m.energy += 10*en
+        for member in self.members:
+            member.energy += 100 * energy/len(self)
 
     def get_energy(self):
         return sum([m.energy for m in self.members])
@@ -355,6 +351,11 @@ class Group:
         for member in self.members:
             member.die("bomb")
         self.members_id = [] # should not be necessary but just in case
+
+    @property
+    def members:
+        # should be implemented in child classes
+        raise NotImplementedError
 
 
 class Herd(Group):
@@ -532,8 +533,8 @@ class Pride(Group):
     def hunt(self):
         prey = self.pos.herd.get_champion()
         if prey.energy * np.random.random() < self.get_energy() * np.random.random():
-            # self.add_energy(prey.energy)
-            self.get_champion().energy += 100*prey.energy
+            self.add_energy(prey.energy)
+            # self.get_champion().energy += 10000*prey.energy
             try:
                 prey.die("hunted_down")
             except AlreadyDeadError:

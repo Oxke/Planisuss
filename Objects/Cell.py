@@ -38,9 +38,12 @@ class Cell:
 
     def add_pride(self, pride, world=None):
         if world:
-            carviz = self.Ecosystem.Carviz.spawn(self, world)
-            self.pride = self.Ecosystem.Pride([carviz], self, world)
-            self.pride[0].pride = self.pride
+            carvizes = []
+            for _ in range(2):
+                carvizes.append(self.Ecosystem.Carviz.spawn(self, world))
+            self.pride = self.Ecosystem.Pride(carvizes, self, world)
+            for carviz in self.pride.members:
+                carviz.pride = self.pride
         elif self.pride:
             if self.pride != pride:
                 if pride.get_sa() + self.pride.get_sa() > 1:

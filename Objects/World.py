@@ -107,7 +107,7 @@ class World:
 
         water = np.array([[cell.water for cell in row] for row in self.grid])
         status = np.dstack((water, water, vegetob+water))
-        DAY_BY_DAY_RESULTS.append((status, (0, 0, 0)))
+        DAY_BY_DAY_RESULTS.append((status, (0, 0)))
         return start_cell
 
     def day(self, frame, to_track=None, change_geology=[], invert=False,
@@ -263,7 +263,7 @@ class World:
         self.ax[1].set_xlabel("Days")
         self.ax[1].set_ylabel("Number of animals")
 
-        if num_erbasts+num_carvizes == 0 and frame != 0:
+        if num_carvizes+num_erbasts == 0 and frame != 0:
             self.fig.canvas.draw_idle()
             fig, ax = plt.subplots(1, 3)
             fig.suptitle("(Animal) Life got extinct, here are the causes:",
@@ -271,9 +271,12 @@ class World:
             erb_causes = CAUSE_OF_DEATH["Erbast"]
             car_causes = CAUSE_OF_DEATH["Carviz"]
             ax[1].pie(erb_causes.values(), labels=erb_causes.keys())
+            ax[1].set_title("Erbasts")
             ax[2].pie(car_causes.values(), labels=car_causes.keys())
+            ax[2].set_title("Carvizes")
             ax[0].pie([*erb_causes.values(), *car_causes.values()],
                       labels=[*erb_causes.keys(), *car_causes.keys()])
+            ax[0].set_title("Total")
             plt.show()
             raise TotalExtinction
 
