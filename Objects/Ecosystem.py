@@ -66,9 +66,9 @@ class Animal:
         # has the same name as the grow method of Vegetob
 
         self.age += 1
-        while self.energy >= 150:
-            self.energy -= 50
-            self.lifetime += 1
+        # while self.energy >= 150:
+        #     self.energy -= 50
+        #     self.lifetime += 1
 
         # While the making of the project, I considered the possibility of
         # having an overcrowding mechanic, it turned out it wasn't necessary but
@@ -224,12 +224,12 @@ class Carviz(Animal):
         self.pride.remove(self)
         if not self._alive:
             return
-        if self.energy > self.pos.herd.get_energy():
+        if not self.pos.herd or self.energy > self.pos.herd.get_energy():
             destination = np.random.choice(self.world.get_neighbors(self.pos,
                                                                     flag="land"))
             self.energy -= self.world.distance(self.pos, destination)
             if self.energy <= 0:
-                # self.die()
+                # self.die("lack_energy_movement")
                 return
             self.pos = destination
         if self.pos.pride:
@@ -241,11 +241,13 @@ class Carviz(Animal):
             self.pos.add_pride(self.pride)
 
     def choose_carviz(self, new_pride_pos):
-        if not self.pos.herd or (new_pride_pos.herd and
-                                 new_pride_pos.herd.get_energy()*self.social_attitude
-                                 > self.pos.herd.get_energy() and self.energy >
-                                 new_pride_pos.herd.get_energy() and
-                                 len(self.pride)*(self.social_attitude+0.01) < 100):
+        # if not self.pos.herd or (new_pride_pos.herd and
+        #                          new_pride_pos.herd.get_energy()*self.social_attitude
+        #                          > self.pos.herd.get_energy() and self.energy >
+        #                          new_pride_pos.herd.get_energy() and
+        #                          len(self.pride)*(self.social_attitude+0.01) < 100):
+        #     self.stay_with_pride(new_pride_pos)
+        if np.random.random() < 0.5:
             self.stay_with_pride(new_pride_pos)
         else:
             self.quit_pride()
@@ -332,7 +334,7 @@ class Group:
 
     def add_energy(self, energy):
         for member in self.members:
-            member.energy += 100 * energy/len(self)
+            member.energy += 10 * energy/len(self)
 
     def get_energy(self):
         return sum([m.energy for m in self.members])
@@ -353,7 +355,7 @@ class Group:
         self.members_id = [] # should not be necessary but just in case
 
     @property
-    def members:
+    def members(self):
         # should be implemented in child classes
         raise NotImplementedError
 
@@ -473,7 +475,7 @@ class Pride(Group):
         if self.world.distance(self.pos, new_cell) <= 1:
             self.move(self.pos)
             return
-        neigh = self.world.get_adjacent(self.pos, flag="land")
+        neigh = self.world.get_neighbors(self.pos, 2, flag="land")
         actual_new_cell = neigh[np.argmin([self.world.distance(new_cell, n) for n in neigh])]
         self.move(actual_new_cell)
 
@@ -522,6 +524,10 @@ class Pride(Group):
                         self_champion.die("fight")
             except AlreadyDeadError:
                 print("Just killed dead carviz, stopping the fight...")
+                if other_champion.energy <= 0:
+                    other_pride.remove(other_champion)
+                else:
+                    self.remove(self_champion)
                 break
         else:
             return self.join(other_pride)

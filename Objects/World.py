@@ -209,11 +209,13 @@ class World:
         print(f"{len(CARVIZES)}, {len(ERBASTS)}")
 
     def create_plot(self):
-        return plt.subplots(1, 2, figsize=(20, 10))
+        fig, ax = plt.subplots(1, 2, figsize=(20, 10))
+        mng = plt.get_current_fig_manager()
+        mng.full_screen_toggle()
+        return fig, ax
 
     def plot(self, frame, create=False):
         """Plots the world"""
-
         # Time in years, months, days format
         ez_time = ""
         if frame >= 365:
@@ -264,20 +266,7 @@ class World:
         self.ax[1].set_ylabel("Number of animals")
 
         if num_carvizes+num_erbasts == 0 and frame != 0:
-            self.fig.canvas.draw_idle()
-            fig, ax = plt.subplots(1, 3)
-            fig.suptitle("(Animal) Life got extinct, here are the causes:",
-                         fontsize=16)
-            erb_causes = CAUSE_OF_DEATH["Erbast"]
-            car_causes = CAUSE_OF_DEATH["Carviz"]
-            ax[1].pie(erb_causes.values(), labels=erb_causes.keys())
-            ax[1].set_title("Erbasts")
-            ax[2].pie(car_causes.values(), labels=car_causes.keys())
-            ax[2].set_title("Carvizes")
-            ax[0].pie([*erb_causes.values(), *car_causes.values()],
-                      labels=[*erb_causes.keys(), *car_causes.keys()])
-            ax[0].set_title("Total")
-            plt.show()
+            self.plot_causes_of_death()
             raise TotalExtinction
 
         # showing the tracked groups
@@ -291,6 +280,26 @@ class World:
                     X = [el[1].x for el in cell.pride.tracked if el[0] <= frame]
                     Y = [el[1].y for el in cell.pride.tracked if el[0] <= frame]
                     self.ax[0].plot(Y, X, "ro-", markersize=6, lw=3)
+
+    def plot_causes_of_death(self):
+        self.fig.canvas.draw_idle()
+        fig, ax = plt.subplots(1, 3, figsize=(15, 7))
+        fig.suptitle("(Animal) Life got extinct, here are the causes:",
+                     fontsize=16)
+
+        ax[1].set_title("Erbasts")
+        erb_causes = CAUSE_OF_DEATH["Erbast"]
+        ax[1].pie(erb_causes.values(), labels=erb_causes.keys())
+
+        ax[2].set_title("Carvizes")
+        car_causes = CAUSE_OF_DEATH["Carviz"]
+        ax[2].pie(car_causes.values(), labels=car_causes.keys())
+
+        ax[0].set_title("Total")
+        total = {key: erb_causes.get(key, 0) + car_causes.get(key, 0) for
+                 key in set(erb_causes) | set(car_causes)}
+        ax[0].pie(total.values(), labels=total.keys())
+        plt.show()
 
     def run(self, days=1000):
         ani = Interactive_Animation(self.fig, self.ax, self.day, mini=0,

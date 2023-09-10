@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from numpy.random import randint as rand
 class Cell:
     """Class representing a cell in the world
     A cell can contain a vegetob, a herd of erbast and a pride of carviz"""
@@ -24,9 +25,12 @@ class Cell:
         """The world argument is only used when spawning a new herd when
         starting the simulation"""
         if world:
-            erbast = self.Ecosystem.Erbast.spawn(self, world)
-            self.herd = self.Ecosystem.Herd([erbast], self, world)
-            self.herd[0].herd = self.herd
+            erbasts = []
+            for _ in range(10):
+                erbasts.append(self.Ecosystem.Erbast.spawn(self, world))
+            self.herd = self.Ecosystem.Herd(erbasts, self, world)
+            for erbast in self.herd.members:
+                erbast.herd = self.herd
         elif self.herd:
             if self.herd != herd:
                 self.herd = self.herd.join(herd)
@@ -39,7 +43,7 @@ class Cell:
     def add_pride(self, pride, world=None):
         if world:
             carvizes = []
-            for _ in range(2):
+            if rand(10) < 5:
                 carvizes.append(self.Ecosystem.Carviz.spawn(self, world))
             self.pride = self.Ecosystem.Pride(carvizes, self, world)
             for carviz in self.pride.members:
