@@ -20,13 +20,12 @@ class Cell:
         self.Ecosystem = obj.Ecosystem
         self.vegetob = self.Ecosystem.Vegetob(density, self)
 
-
     def add_herd(self, herd, world=None):
         """The world argument is only used when spawning a new herd when
         starting the simulation"""
         if world:
             erbasts = []
-            for _ in range(10):
+            for _ in range(rand(0, 4)):
                 erbasts.append(self.Ecosystem.Erbast.spawn(self, world))
             self.herd = self.Ecosystem.Herd(erbasts, self, world)
             for erbast in self.herd.members:
@@ -43,7 +42,7 @@ class Cell:
     def add_pride(self, pride, world=None):
         if world:
             carvizes = []
-            if rand(10) < 5:
+            if rand(5) == 1:
                 carvizes.append(self.Ecosystem.Carviz.spawn(self, world))
             self.pride = self.Ecosystem.Pride(carvizes, self, world)
             for carviz in self.pride.members:

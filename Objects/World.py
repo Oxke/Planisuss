@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # from matplotlib.animation import FuncAnimation
+import tkinter as tk
 from Visualization import Interactive_Animation
 from matplotlib.widgets import Button
 from matplotlib import animation
@@ -80,7 +81,7 @@ class World:
                 continue
             cell.spawn_vegetob(rd.randint(0, 100))
             cell.add_herd(None, self)
-            cell.add_pride(None, self)
+            # cell.add_pride(None, self)
             done.append(cell)
             for neighbor in self.get_adjacent(cell):
                 if neighbor in done:
@@ -110,24 +111,36 @@ class World:
         DAY_BY_DAY_RESULTS.append((status, (0, 0)))
         return start_cell
 
-    def day(self, frame, to_track=None, change_geology=[], invert=False,
-            bomb=None, big=False, track_cancel=False):
+    def day(self, frame, info=None, change_geology=[], invert=False,
+            bomb=None, big=False, track_cancel=False, revive=None):
         """Main function for the simulation, it runs a day or plots a previous
         day if already simulated
         Args:
             frame: the day to simulate or plot
-            to_track: the cell where the herd and/or pride to track is situated
+
+            info: the cell of which to show the info (about herd and/or pride
+                living there etc)
+
             change_geology: a list of coordinates of cells to change the
                 geology, i.e. to make them water or land, default makes water
                 land, unless invert is True
+
             invert: if True, the change_geology list is used to make land water
+
             bomb: destroys te cells near to the coordinates given
+
             big: if True, the bomb is bigger (radius approximately 1/3 of the
-            world size, wrt to the default 1/10) """
-        if to_track:
-            c = self.grid[to_track]
-            if c.herd: c.herd.tracked = [] if c.herd.tracked else [(frame, c)]
-            if c.pride: c.pride.tracked = [] if c.pride.tracked else [(frame, c)]
+                world size, wrt to the default 1/10)
+
+            revive: revives either erbasts or carvizes, respawning them randomly
+                all over the map
+
+            track_cancel: if true, cancel all the future saved history and
+                status and restarts simulating from today"""
+
+        if info:
+            c = self.grid[info]
+            self.show_info(c, frame)
 
         for coordinates in change_geology:
             c = self.grid[coordinates]
@@ -152,10 +165,19 @@ class World:
                 DAY_BY_DAY_RESULTS[frame][0][c.x, c.y, :] = 1 if c.water else 0
 
         if track_cancel:
+            # for row in self.grid:
+            #     for cell in row:
+            #         if cell.herd: cell.herd.tracked = []
+            #         if cell.pride: cell.pride.tracked = []
+            del DAY_BY_DAY_RESULTS[frame:]
+
+        if revive:
             for row in self.grid:
                 for cell in row:
-                    if cell.herd: cell.herd.tracked = []
-                    if cell.pride: cell.pride.tracked = []
+                    if revive == "erbasts" and not cell.water:
+                        cell.add_herd(None, self)
+                    elif revive == "carvizes" and not cell.water:
+                        cell.add_pride(None, self)
 
         self.plot(frame)
 
@@ -211,7 +233,7 @@ class World:
     def create_plot(self):
         fig, ax = plt.subplots(1, 2, figsize=(20, 10))
         mng = plt.get_current_fig_manager()
-        mng.full_screen_toggle()
+        # mng.full_screen_toggle()
         return fig, ax
 
     def plot(self, frame, create=False):
@@ -301,6 +323,40 @@ class World:
         ax[0].pie(total.values(), labels=total.keys())
         plt.show()
 
+    def show_info(self, cell, frame):
+        """Displays a little window with information about the cell, namely all
+        the properties of the vegetob, herd and pride in it"""
+        if cell.water:
+            return
+        info = ""
+        if frame+1 >= len(DAY_BY_DAY_RESULTS):
+            if cell.vegetob is not None:
+                info += f"Vegetob:\n    density: {round(cell.vegetob.density)}%"
+            if cell.herd is not None:
+                info += f"""
+    \nHerd ({len(cell.herd)} erbasts)):
+        average energy:\t\t{0 if len(cell.herd) == 0 else round(cell.herd.get_energy()/len(cell.herd),2)}
+        average age:\t\t{round(cell.herd.get_age(), 2)}
+        average lifespan:\t{round(cell.herd.get_lifetime(), 2)}
+        avg social attitude:\t{round(cell.herd.get_sa(), 2)} """
+            if cell.pride is not None:
+                info += f"""
+    \nPride ({len(cell.pride)} carvizes):
+        average energy:\t\t{0 if len(cell.pride) == 0 else round(cell.pride.get_energy()/len(cell.herd),2)}
+        average age:\t\t{round(cell.pride.get_age(), 2)}
+        average lifespan:\t{round(cell.pride.get_lifetime(), 2)}
+        avg social attitude:\t{round(cell.pride.get_sa(), 2)}"""
+        else:
+            carvizes, erbasts, vegetob = DAY_BY_DAY_RESULTS[frame][0][cell.x, cell.y]
+            if vegetob != 0:
+                info += f"Vegetob: {round(vegetob*100)}%"
+            if erbasts != 0:
+                info += f"\nHerd: {'>=4' if erbasts == 1 else int(erbasts*4)} erbasts"
+            if carvizes != 0:
+                info += f"\nPride: {'>=4' if carvizes == 1 else int(carvizes*4)} carvizes"
+
+        tk.messagebox.showinfo(title=f"Cell ({cell.x}, {cell.y})", message=info)
+
     def run(self, days=1000):
         ani = Interactive_Animation(self.fig, self.ax, self.day, mini=0,
                                     maxi=days,
@@ -315,9 +371,15 @@ class World:
         for row in self.grid:
             for cell in row:
                 if cell.herd and flag in [None, "erbasts"]:
-                    res += len(cell.herd)
+                    if len(cell.herd):
+                        res += len(cell.herd)
+                    else:
+                        cell.remove_herd()
                 if cell.pride and flag in [None, "carvizes"]:
-                    res += len(cell.pride)
+                    if len(cell.pride):
+                        res += len(cell.pride)
+                    else:
+                        cell.remove_pride()
         return res
 
     def total_energy(self, flag=None):
@@ -329,4 +391,3 @@ class World:
                 if cell.pride and flag in [None, 'carvizes']:
                     res += cell.pride.get_energy()
         return res
-

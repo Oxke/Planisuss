@@ -75,13 +75,11 @@ class Interactive_Animation(FuncAnimation):
         self._interval = self._original_interval / 10**val
 
     def onclick(self, event):
-        on_right = 2*event.x > self.fig.get_figwidth()*self.fig.get_dpi()
-        not_on_buttons = 0.001 < event.y < 0.83*self.fig.get_figheight()*self.fig.get_dpi()
-        if on_right and event.xdata and not self.runs:
+        if event.inaxes == self.ax[1] and not self.runs:
             self.i = max(0, round(event.xdata))
             self.func(self.i)
             self.fig.canvas.draw_idle()
-        elif not_on_buttons and event.xdata and not self.runs:
+        elif event.inaxes == self.ax[0] and not self.runs:
             if event.button == 1:
                 self.func(self.i, (round(event.ydata), round(event.xdata)))
                 self.pressed = [(round(event.ydata), round(event.xdata))]
@@ -91,9 +89,7 @@ class Interactive_Animation(FuncAnimation):
                 self.fig.canvas.draw_idle()
 
     def on_move(self, event):
-        on_left = 2*event.x < self.fig.get_figwidth()*self.fig.get_dpi()
-        not_on_buttons = 0.001 < event.y < 0.83*self.fig.get_figheight()*self.fig.get_dpi()
-        if self.pressed and event.xdata and on_left and not_on_buttons:
+        if self.pressed and event.inaxes == self.ax[0]:
             self.pressed.append((round(event.ydata), round(event.xdata)))
 
     def on_release(self, event):
@@ -112,9 +108,14 @@ class Interactive_Animation(FuncAnimation):
                 self.stop()
             else:
                 self.start()
-        elif event.key == 'c':
+        elif event.key == 'r':
             self.func(self.i, track_cancel=True)
             self.fig.canvas.draw_idle()
+        elif event.key == 'e':
+            self.func(self.i, revive='erbasts')
+        elif event.key == 'c':
+            self.func(self.i, revive='carvizes')
+
 
     def setup(self, pos):
         playerax = self.fig.add_axes([pos[0],pos[1], 0.352, 0.04])
@@ -133,7 +134,7 @@ class Interactive_Animation(FuncAnimation):
         self.button_stop.on_clicked(self.stop)
         self.button_forward.on_clicked(self.forward)
         self.button_oneforward.on_clicked(self.oneforward)
-        speedax = self.fig.add_axes([pos[0],0.08, 0.3527, 0.07])
+        speedax = self.fig.add_axes([pos[0],0.08, 0.3527, 0.05])
         self.slider_speed = Slider(speedax, "Animation Speed", -2, 1, valinit=0)
         self.slider_speed.on_changed(self.changespeed)
         conn_click = self.fig.canvas.mpl_connect("button_press_event", self.onclick)

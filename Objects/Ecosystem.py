@@ -97,7 +97,6 @@ class Erbast(Animal):
         self._id = len(ERBASTS)
         ERBASTS.append(self)
 
-
     @property
     def id(self):
         return self._id
@@ -117,8 +116,6 @@ class Erbast(Animal):
 
     def graze(self, quantity):
         self.energy += quantity // (self.age+1) * self.lifetime
-        # self.energy += quantity
-        # self.pos.vegetob.density -= quantity
 
     def stay_with_herd(self, new_herd_pos):
         self.energy -= self.world.distance(self.pos, new_herd_pos)
@@ -158,7 +155,7 @@ class Erbast(Animal):
 
     @classmethod
     def spawn(cls, pos: Cell, wrld):
-        return cls(1000, 100, 0.8, pos, pos.herd, wrld)
+        return cls(100, 10, 0.8, pos, pos.herd, wrld)
 
     def die(self, reason=None):
         global CAUSE_OF_DEATH
@@ -254,7 +251,7 @@ class Carviz(Animal):
 
     @classmethod
     def spawn(cls, pos: Cell, wrld):
-        return cls(1000, 100, 0.8, pos, pos.pride, wrld)
+        return cls(1000, 40, 0.8, pos, pos.pride, wrld)
 
     def die(self, reason=None):
         global CAUSE_OF_DEATH
@@ -343,6 +340,16 @@ class Group:
         if len(self) == 0:
             return 1
         return np.array([m.social_attitude for m in self.members]).mean()
+
+    def get_lifetime(self):
+        if len(self) == 0:
+            return 0
+        return np.array([m.lifetime for m in self.members]).mean()
+
+    def get_age(self):
+        if len(self) == 0:
+            return 0
+        return np.array([m.age for m in self.members]).mean()
 
     def clean(self, max_id):
         for member_id in list(self.members_id):
@@ -471,6 +478,10 @@ class Pride(Group):
             elif cell in self.memory:
                 self.memory[cell] = 0
 
+    def memory_value(self, cell):
+        if cell in self.memory: return self.memory[cell]
+        return 1
+
     def move_towards(self, new_cell):
         if self.world.distance(self.pos, new_cell) <= 1:
             self.move(self.pos)
@@ -498,7 +509,7 @@ class Pride(Group):
             carviz_choices(self.pos)
             self.hunt()
         else:
-            new_cell = max(self.memory, key=self.memory.get,
+            new_cell = max(self.memory, key=self.memory_value,
                            default=np.random.choice(self.world.get_neighbors(self.pos, flag="land")))
             carviz_choices(new_cell)
             self.move_towards(new_cell)
