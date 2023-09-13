@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # from matplotlib.animation import FuncAnimation
+import pickle
 import tkinter as tk
 from Visualization import Interactive_Animation
 from matplotlib.widgets import Button
@@ -10,11 +11,14 @@ from numpy import random as rd
 from Objects.Cell import Cell
 from matplotlib import pyplot as plt
 from errors import TotalExtinction
-from variables import DAY_BY_DAY_RESULTS, ERBASTS, CARVIZES, CAUSE_OF_DEATH
+from variables import ERBASTS, CARVIZES, CAUSE_OF_DEATH
+
+SAVED = []
 
 class World:
     """Class representing the world"""
     def __init__(self, num_cells, neighborhood):
+        self.history = []
         self.num_cells = num_cells
         self.neighborhood = neighborhood
         self.grid = np.array([[Cell(x, y) for y in range(self.num_cells)]
@@ -108,11 +112,11 @@ class World:
 
         water = np.array([[cell.water for cell in row] for row in self.grid])
         status = np.dstack((water, water, vegetob+water))
-        DAY_BY_DAY_RESULTS.append((status, (0, 0)))
+        self.history.append((status, (0, 0)))
         return start_cell
 
     def day(self, frame, info=None, change_geology=[], invert=False,
-            bomb=None, big=False, track_cancel=False, revive=None):
+            bomb=None, big=False, track_cancel=False, revive=None, save=False):
         """Main function for the simulation, it runs a day or plots a previous
         day if already simulated
         Args:
@@ -135,8 +139,11 @@ class World:
             revive: revives either erbasts or carvizes, respawning them randomly
                 all over the map
 
+            save: if True, saves the current status and history in a file as a
+                form of checkpoint (uses pickle)
+
             track_cancel: if true, cancel all the future saved history and
-                status and restarts simulating from today"""
+                status and restarts simulating from last saved checkpoint"""
 
         if info:
             c = self.grid[info]
@@ -147,13 +154,13 @@ class World:
             if c.water and not invert:
                 c.water = False
                 c.spawn_vegetob(rd.randint(0,100))
-                DAY_BY_DAY_RESULTS[frame][0][c.x, c.y, :] = 0
+                self.history[frame][0][c.x, c.y, :] = 0
             elif not c.water and invert:
                 c.water = True
                 c.vegetob = None
                 if c.herd: c.herd.suppress()
                 if c.pride: c.pride.suppress()
-                DAY_BY_DAY_RESULTS[frame][0][c.x, c.y, :] = 1
+                self.history[frame][0][c.x, c.y, :] = 1
 
         if bomb:
             center = self.grid[bomb]
@@ -162,14 +169,18 @@ class World:
                 if c.vegetob: c.vegetob.suppress()
                 if c.herd: c.herd.suppress()
                 if c.pride: c.pride.suppress()
-                DAY_BY_DAY_RESULTS[frame][0][c.x, c.y, :] = 1 if c.water else 0
+                self.history[frame][0][c.x, c.y, :] = 1 if c.water else 0
+
+        if save:
+            SAVED.append(frame)
+            with open(f'checkpoints/checkpoint_{frame}.pkl', 'wb') as f:
+                pickle.dump((self.history, self.grid), f)
 
         if track_cancel:
-            # for row in self.grid:
-            #     for cell in row:
-            #         if cell.herd: cell.herd.tracked = []
-            #         if cell.pride: cell.pride.tracked = []
-            del DAY_BY_DAY_RESULTS[frame:]
+            frame = SAVED[-1]
+            with open(f'checkpoints/checkpoint_{frame}.pkl', 'rb') as f:
+                SAVED.append(frame)
+                self.history, self.grid = pickle.load(f)
 
         if revive:
             for row in self.grid:
@@ -250,7 +261,7 @@ class World:
         if ez_time:
             ez_time += ")"
 
-        if len(DAY_BY_DAY_RESULTS) <= frame:
+        if len(self.history) <= frame:
             if len(ERBASTS) + len(CARVIZES) >= 50000:
                 self.update_animals_indexes()
             self.day_events(frame)
@@ -266,9 +277,9 @@ class World:
             num_carvizes = self.total_animals("carvizes")
 
             status = np.dstack((carvizes+water, erbasts+water, vegetob+water))
-            DAY_BY_DAY_RESULTS.append((status, (num_erbasts, num_carvizes)))
+            self.history.append((status, (num_erbasts, num_carvizes)))
         else:
-            status, (num_erbasts, num_carvizes) = DAY_BY_DAY_RESULTS[frame]
+            status, (num_erbasts, num_carvizes) = self.history[frame]
 
 
         self.fig.suptitle(f"Planisuss: Day {frame} {ez_time}", fontsize=24)
@@ -277,12 +288,14 @@ class World:
         self.ax[0].imshow(status)
 
         self.ax[1].clear()
-        self.ax[1].plot([x[1][0] for x in DAY_BY_DAY_RESULTS], 'g',
+        self.ax[1].plot([x[1][0] for x in self.history], 'g',
                         label=f"Erbasts: {num_erbasts}")
-        self.ax[1].plot([x[1][1] for x in DAY_BY_DAY_RESULTS], 'r',
+        self.ax[1].plot([x[1][1] for x in self.history], 'r',
                         label=f"Carvizes: {num_carvizes}")
         self.ax[1].axvline(x=frame, c="b", lw=2, label="TODAY")
-
+        for checkpoint in SAVED:
+            self.ax[1].axvline(x=checkpoint, c="y", lw=1, ls="--",
+                               label='Checkpoint')
         self.ax[1].legend()
         self.ax[1].set_xlabel("Days")
         self.ax[1].set_ylabel("Number of animals")
@@ -329,7 +342,7 @@ class World:
         if cell.water:
             return
         info = ""
-        if frame+1 >= len(DAY_BY_DAY_RESULTS):
+        if frame+1 >= len(self.history):
             if cell.vegetob is not None:
                 info += f"Vegetob:\n    density: {round(cell.vegetob.density)}%"
             if cell.herd is not None:
@@ -347,7 +360,7 @@ class World:
         average lifespan:\t{round(cell.pride.get_lifetime(), 2)}
         avg social attitude:\t{round(cell.pride.get_sa(), 2)}"""
         else:
-            carvizes, erbasts, vegetob = DAY_BY_DAY_RESULTS[frame][0][cell.x, cell.y]
+            carvizes, erbasts, vegetob = self.history[frame][0][cell.x, cell.y]
             if vegetob != 0:
                 info += f"Vegetob: {round(vegetob*100)}%"
             if erbasts != 0:

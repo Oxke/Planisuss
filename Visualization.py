@@ -115,6 +115,8 @@ class Interactive_Animation(FuncAnimation):
             self.func(self.i, revive='erbasts')
         elif event.key == 'c':
             self.func(self.i, revive='carvizes')
+        elif event.key == 'enter':
+            self.func(self.i, save=True)
 
 
     def setup(self, pos):

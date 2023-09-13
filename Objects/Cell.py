@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 from numpy.random import randint as rand
+
+ecosystem = None
+
 class Cell:
     """Class representing a cell in the world
     A cell can contain a vegetob, a herd of erbast and a pride of carviz"""
@@ -10,14 +13,21 @@ class Cell:
         self.pride = None
         self.water = water  # if true, no animal or vegetob can live there
         self.vegetob = None
-        self.Ecosystem = None
+
+    @property
+    def Ecosystem(self):
+        global ecosystem
+        if ecosystem:
+            return ecosystem
+        ecosystem = __import__("Objects.Ecosystem").Ecosystem
+        return ecosystem
 
     def spawn_vegetob(self, density: float):
         """Spawns a vegetob in the cell"""
         assert self.vegetob is None, f"{self} already has a vegetob"
         assert not self.water, f"Can't spawn vegetob in water at {self}"
-        obj = __import__("Objects.Ecosystem")
-        self.Ecosystem = obj.Ecosystem
+        # obj = __import__("Objects.Ecosystem")
+        # self.Ecosystem = obj.Ecosystem
         self.vegetob = self.Ecosystem.Vegetob(density, self)
 
     def add_herd(self, herd, world=None):
@@ -44,9 +54,9 @@ class Cell:
             carvizes = []
             if rand(5) == 1:
                 carvizes.append(self.Ecosystem.Carviz.spawn(self, world))
-            self.pride = self.Ecosystem.Pride(carvizes, self, world)
-            for carviz in self.pride.members:
-                carviz.pride = self.pride
+                self.pride = self.Ecosystem.Pride(carvizes, self, world)
+                for carviz in self.pride.members:
+                    carviz.pride = self.pride
         elif self.pride:
             if self.pride != pride:
                 if pride.get_sa() + self.pride.get_sa() > 1:

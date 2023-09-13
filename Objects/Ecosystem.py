@@ -213,7 +213,7 @@ class Carviz(Animal):
     def stay_with_pride(self, new_pride_pos):
         self.energy -= self.world.distance(self.pos, new_pride_pos)
         if self.energy <= 0:
-            # self.die("lack_energy_movement")
+            self.die("lack_energy_movement")
             return
         self.pos = self.pride.pos
 
@@ -226,7 +226,7 @@ class Carviz(Animal):
                                                                     flag="land"))
             self.energy -= self.world.distance(self.pos, destination)
             if self.energy <= 0:
-                # self.die("lack_energy_movement")
+                self.die("lack_energy_movement")
                 return
             self.pos = destination
         if self.pos.pride:
@@ -300,7 +300,7 @@ class Group:
         self.tracked = tracked
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(({self.pos.x}, {self.pos.y}), {self.members_id})"
+        return f"{self.__class__.__name__}(({self.pos}), {self.members_id})"
 
     def __eq__(self, other):
         if len(self) != len(other):
@@ -318,6 +318,12 @@ class Group:
 
     def remove(self, member: Carviz or Erbast):
         self.members_id = [m for m in self.members_id if m != member._id]
+        # if len(self) == 0:
+        #     if isinstance(self, Herd):
+        #         self.pos.remove_herd()
+        #     elif isinstance(self, Pride):
+        #         self.pos.remove_pride()
+        #     del self
 
     def join(self, other_group):
         self.members_id += other_group.members_id
@@ -455,6 +461,7 @@ class Pride(Group):
                  tracked=[]):
         super().__init__(position, world, carvizes, tracked)
         self.pos.add_pride(self)
+
     def __getitem__(self, key):
         global CARVIZES
         return CARVIZES[self.members_id[key]]
@@ -467,8 +474,12 @@ class Pride(Group):
 
     def get_champion(self):
         global CARVIZES
-        return CARVIZES[max(self.members_id, key=lambda m: CARVIZES[m].energy if
+        try:
+            return CARVIZES[max(self.members_id, key=lambda m: CARVIZES[m].energy if
                             CARVIZES[m]._alive else 0, default=0)]
+        except IndexError:
+            for member_id in self.members_id:
+                print(member_id, CARVIZES[member_id]._alive)
 
     def check_near_cells(self):
         self.memory = {c: e/2 for c, e in self.memory.items() if e > 0.5}
@@ -533,8 +544,9 @@ class Pride(Group):
                     self_champion.energy -= other_champion.energy/2
                     if self_champion.energy <= 0:
                         self_champion.die("fight")
-            except AlreadyDeadError:
-                print("Just killed dead carviz, stopping the fight...")
+            except AlreadyDeadError as e:
+                # print(e)
+                # print("Just killed dead carviz, stopping the fight...")
                 if other_champion.energy <= 0:
                     other_pride.remove(other_champion)
                 else:
