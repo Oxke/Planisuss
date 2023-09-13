@@ -81,7 +81,7 @@ class World:
                 continue
             cell.spawn_vegetob(rd.randint(0, 100))
             cell.add_herd(None, self)
-            # cell.add_pride(None, self)
+            cell.add_pride(None, self)
             done.append(cell)
             for neighbor in self.get_adjacent(cell):
                 if neighbor in done:

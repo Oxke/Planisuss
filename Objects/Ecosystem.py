@@ -251,7 +251,7 @@ class Carviz(Animal):
 
     @classmethod
     def spawn(cls, pos: Cell, wrld):
-        return cls(1000, 40, 0.8, pos, pos.pride, wrld)
+        return cls(1000, 1, 0.8, pos, pos.pride, wrld)
 
     def die(self, reason=None):
         global CAUSE_OF_DEATH
