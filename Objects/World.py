@@ -31,11 +31,11 @@ class World:
 
     def distance(self, cell1, cell2):
         """Returns the distance between two cells"""
-        return np.linalg.norm([abs(cell1.x-cell2.x), abs(cell1.y-cell2.y)])
+        return np.linalg.norm([abs(cell1.x-cell2.x), abs(cell1.y-cell2.y)]) # Euclidean distance
 
     def get_neighbors(self, cell: Cell, near=None, flag=None):
-        if near is None: near=self.neighborhood
         """Returns the neighborhood of a cell, according to the distance defined"""
+        if near is None: near=self.neighborhood
         neighborhood = []
         for x in range(cell.x-near, cell.x+near+1):
             for y in range(cell.y-near, cell.y+near+1):
@@ -117,6 +117,7 @@ class World:
 
     def day(self, frame, info=None, change_geology=[], invert=False,
             bomb=None, big=False, track_cancel=False, revive=None, save=False):
+        global CARVIZES, ERBASTS
         """Main function for the simulation, it runs a day or plots a previous
         day if already simulated
         Args:
@@ -171,16 +172,15 @@ class World:
                 if c.pride: c.pride.suppress()
                 self.history[frame][0][c.x, c.y, :] = 1 if c.water else 0
 
-        if save:
+        if save and len(self.history) <= frame+1:
             SAVED.append(frame)
             with open(f'checkpoints/checkpoint_{frame}.pkl', 'wb') as f:
-                pickle.dump((self.history, self.grid), f)
+                pickle.dump((self.history, self.grid, CARVIZES, ERBASTS), f)
 
-        if track_cancel:
-            frame = SAVED[-1]
+        if track_cancel and SAVED:
+            frame = SAVED.pop()
             with open(f'checkpoints/checkpoint_{frame}.pkl', 'rb') as f:
-                SAVED.append(frame)
-                self.history, self.grid = pickle.load(f)
+                self.history, self.grid, CARVIZES, ERBASTS = pickle.load(f)
 
         if revive:
             for row in self.grid:
@@ -191,11 +191,12 @@ class World:
                         cell.add_pride(None, self)
 
         self.plot(frame)
+        return frame
 
     def day_events(self, frame):
-        global ERBASTS, CARVIZES
         """Function defining the events of the day"""
-        # Growing: the vegetob grows etverywhere, in this phase also all animals
+        global ERBASTS, CARVIZES
+        # Growing: the vegetob grows everywhere, in this phase also all animals
         # age and eventually die.
         for row in self.grid:
             for cell in row:
@@ -213,8 +214,8 @@ class World:
                 if cell.pride: cell.pride.choose(frame)
 
     def update_animals_indexes(self):
-        global CARVIZES, ERBASTS
         """Updates the indexes of the animals"""
+        global CARVIZES, ERBASTS
         print(f"{len(CARVIZES)}, {len(ERBASTS)}", end=" -> ")
 
         i = 0
@@ -242,10 +243,7 @@ class World:
         print(f"{len(CARVIZES)}, {len(ERBASTS)}")
 
     def create_plot(self):
-        fig, ax = plt.subplots(1, 2, figsize=(20, 10))
-        mng = plt.get_current_fig_manager()
-        # mng.full_screen_toggle()
-        return fig, ax
+        return plt.subplots(1, 2, figsize=(20, 10))
 
     def plot(self, frame, create=False):
         """Plots the world"""
@@ -293,9 +291,11 @@ class World:
         self.ax[1].plot([x[1][1] for x in self.history], 'r',
                         label=f"Carvizes: {num_carvizes}")
         self.ax[1].axvline(x=frame, c="b", lw=2, label="TODAY")
-        for checkpoint in SAVED:
-            self.ax[1].axvline(x=checkpoint, c="y", lw=1, ls="--",
+        if SAVED:
+            self.ax[1].axvline(x=SAVED[0], c="y", lw=1, ls="--",
                                label='Checkpoint')
+            for checkpoint in SAVED[1:]:
+                self.ax[1].axvline(x=checkpoint, c="y", lw=1, ls="--")
         self.ax[1].legend()
         self.ax[1].set_xlabel("Days")
         self.ax[1].set_ylabel("Number of animals")

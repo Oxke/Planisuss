@@ -109,14 +109,17 @@ class Interactive_Animation(FuncAnimation):
             else:
                 self.start()
         elif event.key == 'r':
-            self.func(self.i, track_cancel=True)
+            self.i = self.func(self.i, track_cancel=True)
             self.fig.canvas.draw_idle()
         elif event.key == 'e':
             self.func(self.i, revive='erbasts')
+            self.fig.canvas.draw_idle()
         elif event.key == 'c':
             self.func(self.i, revive='carvizes')
+            self.fig.canvas.draw_idle()
         elif event.key == 'enter':
             self.func(self.i, save=True)
+            self.fig.canvas.draw_idle()
 
 
     def setup(self, pos):

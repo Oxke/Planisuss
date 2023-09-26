@@ -16,6 +16,7 @@ class Cell:
 
     @property
     def Ecosystem(self):
+        # Avoids circular import and permits pickle
         global ecosystem
         if ecosystem:
             return ecosystem
@@ -82,6 +83,8 @@ class Cell:
         return res+len(self.pride) if self.pride else res
 
 class DeadVegetob:
+    """A dead vegetob is a vegetob that lives in a graveyard, is a purely
+    virtual object used to handle errors, just like the Graveyard is"""
     def __init__(self, graveyard):
         self.density = 0
         self.position = graveyard

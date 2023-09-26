@@ -7,6 +7,7 @@ from variables import ERBASTS, CARVIZES, CAUSE_OF_DEATH
 
 
 def part(n: float, m: int):
+    """Returns a list of m random numbers that add up to n"""
     assert isinstance(m, int)
     if m == 0:
         return []
@@ -145,6 +146,7 @@ class Erbast(Animal):
             self.pos.add_herd(self.herd)
 
     def choose_erbast(self, new_herd_pos):
+        """choice of the single erbast to stay or leave the herd"""
         if (new_herd_pos.vegetob.density*self.social_attitude >
             self.pos.vegetob.density and self.energy >
             new_herd_pos.vegetob.density and
@@ -238,12 +240,7 @@ class Carviz(Animal):
             self.pos.add_pride(self.pride)
 
     def choose_carviz(self, new_pride_pos):
-        # if not self.pos.herd or (new_pride_pos.herd and
-        #                          new_pride_pos.herd.get_energy()*self.social_attitude
-        #                          > self.pos.herd.get_energy() and self.energy >
-        #                          new_pride_pos.herd.get_energy() and
-        #                          len(self.pride)*(self.social_attitude+0.01) < 100):
-        #     self.stay_with_pride(new_pride_pos)
+        """choice of the single carviz to stay or leave the pride"""
         if np.random.random() < 0.5:
             self.stay_with_pride(new_pride_pos)
         else:
