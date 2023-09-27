@@ -31,11 +31,11 @@ class World:
 
     def distance(self, cell1, cell2):
         """Returns the distance between two cells"""
-        if DISTANCE = "Euclidean":
+        if DISTANCE == "Euclidean":
             return np.linalg.norm([abs(cell1.x-cell2.x), abs(cell1.y-cell2.y)])
-        if DISTANCE = "Manhattan":
+        if DISTANCE == "Manhattan":
             return abs(cell1.x-cell2.x) + abs(cell1.y-cell2.y)
-        if DISTANCE = "Chebyshev":
+        if DISTANCE == "Chebyshev":
             return max(abs(cell1.x-cell2.x), abs(cell1.y-cell2.y))
 
 

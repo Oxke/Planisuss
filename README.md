@@ -1,4 +1,31 @@
 # Planisuss
+
+## Variables
+- CARVIZES and ERBASTS: lists containing all the Animals, the position in the list
+    corrisponds to the id of the Animal
+- DAYS: days of execution of the simulation
+- NUM\_CELLS: the number of cells in the side of the square which contains the
+  world 
+- NEIGHBORHOOD: the distance under which cells are considered near
+- DISTANCE: the chosen metric, see below
+- CAUSE\_OF\_DEATH: the causes of death of the different species
+
+## Usage
+To run the execution, first satisfy the library requisites in the file
+`requirements.txt` by executing the command
+```pip install $(cat requirements.txt)```
+then start the simulation using the command
+```main.py [-h] [-n NUM_CELLS] [-d DAYS] [-b NEIGHBORHOOD] [-m DISTANCE]```
+
+| short command | long command | explanation
+--- | --- | ---
+-h | --help | show a similar help message to this table and exit.
+-n NUM_CELLS | --num_cells NUM_CELLS | The number of cells in the world.
+-d DAYS | --days DAYS | The number of days to run the simulation.
+-b NEIGHBORHOOD | --neighborhood NEIGHBORHOOD | The number of cells that are considered to be nearby, hence visible by Erbasts.
+-m DISTANCE | --distance DISTANCE | The metric to be used.
+
+
 ## The Planisuss world
 The world is stored as an Object of the Class World, which contains the variable
 `world.grid`: a NUMCELLS x NUMCELLS array containing objects of type Cell.
@@ -64,7 +91,7 @@ as the parent.
 ### Erbast
 An erbast can graze and gain energy by eating vegetob. The amout of energy
 gained, however, is inversely proportional to the percentage of life of the
-Erbast (in practice, Energy gained = 1 * (lifetime / (age + .1) where the `+ .1`
+Erbast (in practice, `Energy gained = 1 * (lifetime / (age + .1)` where the `+ .1`.
 is needed in order to avoid dividing by 0).
 
 
@@ -88,6 +115,7 @@ Parent class of Herd and Pride, has the following properties:
   certain groups
 - members: method that yields the elements of the group as objects, often used
   as a property in order to pass through all the group elements easily.
+  (implemented in subclasses)
 
 and the following methods:
 - \_\_len\_\_: size of the group
@@ -102,3 +130,28 @@ and the following methods:
 - clean: debug method used to remove members which have id numbers which are not
   associated to any animal
 - suppress: as the name suggests, it kills instantly all the members of one herd
+
+### Herd
+Herd movement tend to follow the density of vegetob.
+The choice of the next cell is made in the following way:
+- Near cells are analysed and added to memory
+- If the total energy of the Herd is smaller than the density of the cell, then
+  the Herd doesn't move
+- Otherwise it moves to the highest valued cell in memory, with a caveat: Since
+  it wants to prefer unexplored cells, at each point in time stored values which
+  are not checked again in memory gets halved, and eventually forgotten, so that
+  the herd is discouraged from coming back on its steps to explore other rich
+  cells.
+- Chosen the destination cell, the Herd moves to the near cell that is nearest
+  to the chosen destination cell.
+
+
+### Pride
+Pride movement seems more randomic since average life of Carvizes is much shorter
+then the one of Erbasts, but the result is that prides, or their heir when they
+die, tend to follow, trap and slow down the spread of Herds.
+
+However the Pride follows the exact same strategy in movemnt, except it uses the
+total energy of the Herd as the value indicator and has a wider sight, around
+1/10 of NUMCELLS.
+
