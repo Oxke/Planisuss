@@ -140,8 +140,10 @@ Parent class of Herd and Pride, has the following properties:
 - members\_id: array containing the indeces of the contained Erbasts or Carvizes
 - memory: a dictionary used to decide where to go next, unexplored cells are
   preferred
-- tracked: array of past positions and respective days, used to draw tracks of
-  certain groups
+- tracked: array of past positions and respective days, can be used to draw tracks of
+  certain groups. At the current time there is no way of tracking and untracking
+  groups, so this mechanic is not implemented fully, though the world plotting
+  would support tracked groups.
 - members: method that yields the elements of the group as objects, often used
   as a property in order to pass through all the group elements easily.
   (implemented in subclasses)
