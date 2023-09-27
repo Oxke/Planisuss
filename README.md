@@ -20,13 +20,13 @@ then start the simulation using the command
 
 ```main.py [-h] [-n NUM_CELLS] [-d DAYS] [-b NEIGHBORHOOD] [-m DISTANCE]```
 
-| short command | long command | explanation
---- | --- | ---
--h | --help | show a similar help message to this table and exit.
--n NUM_CELLS | --num_cells NUM_CELLS | The number of cells in the world.
--d DAYS | --days DAYS | The number of days to run the simulation.
--b NEIGHBORHOOD | --neighborhood NEIGHBORHOOD | The number of cells that are considered to be nearby, hence visible by Erbasts.
--m DISTANCE | --distance DISTANCE | The metric to be used.
+| short command | long command | explanation | default value
+--- | --- | --- | ---
+-h | --help | show a similar help message to this table and exit | ---
+-n NUM_CELLS | --num_cells NUM_CELLS | The number of cells in the world. | 50
+-d DAYS | --days DAYS | The number of days to run the simulation. | 10000
+-b NEIGHBORHOOD | --neighborhood NEIGHBORHOOD | The number of cells that are considered to be nearby, hence visible by Erbasts. | 1
+-m DISTANCE | --distance DISTANCE | The metric to be used. | Euclidean
 
 
 ## The Planisuss world
