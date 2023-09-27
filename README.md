@@ -14,7 +14,7 @@
 To run the execution, first satisfy the library requisites in the file
 `requirements.txt` by executing the command
 
-```pip install $(cat requirements.txt)```
+```pip install -r requirements.txt```
 
 then start the simulation using the command
 
