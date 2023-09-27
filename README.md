@@ -154,7 +154,30 @@ Pride movement seems more randomic since average life of Carvizes is much shorte
 then the one of Erbasts, but the result is that prides, or their heir when they
 die, tend to follow, trap and slow down the spread of Herds.
 
-However the Pride follows the exact same strategy in movemnt, except it uses the
+However the Pride follows the exact same strategy in movement, except it uses the
 total energy of the Herd as the value indicator and has a wider sight, around
 1/10 of NUMCELLS.
+
+## Day Events
+The day is constituted of these phases:
+- Grow:
+    - Vegetob: growing
+    - Erbast: Aging and eventually dying
+    - Carviz: Aging and eventually dying
+- Move:
+    - Erbast: each Herd chooses where to move, then each member of its herd
+      chooses if he wants to follow the herd or quit it, then the movement
+      occurs. In case of collision of two or more herds, they join peacefully
+    - Pride: each Pride chooses where to move, then similarly each member
+      chooses and in case of collision of two or more prides they choose of
+      either fighting or joining.
+        - Fight: it consists of 10 attacks, in which the champion from each
+          group combat against each other, and each duel is structured in this
+          way: if champion A has more energy than champion B, then A's energy
+          gets increased by half of B's energy, and B's energy becomes (3B-2A)/4
+          energy that is likely to be negative, hence B probably dies, but not
+          surely.
+    - if a Pride and a Herd end up in the same cell, then a Hunt takes place,
+      and in that case the champion of the Herd gets killed and its energy is
+      shared between the members of the Pride
 

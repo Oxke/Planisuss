@@ -532,12 +532,12 @@ class Pride(Group):
             other_champion = other_pride.get_champion()
             try:
                 if self_champion.energy > other_champion.energy:
-                    self_champion.energy += other_champion.energy
+                    self_champion.energy += other_champion.energy/2
                     other_champion.energy -= self_champion.energy/2
                     if other_champion.energy <= 0:
                         other_champion.die("fight")
                 else:
-                    other_champion.energy += self_champion.energy
+                    other_champion.energy += self_champion.energy/2
                     self_champion.energy -= other_champion.energy/2
                     if self_champion.energy <= 0:
                         self_champion.die("fight")
