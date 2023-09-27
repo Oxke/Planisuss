@@ -291,7 +291,7 @@ class Group:
                  tracked=[]):
         self.pos = pos
         self.world = world
-        self.members_id = [m.id for m in members].
+        self.members_id = [m.id for m in members]
         self.memory = {}
         self.tracked = tracked
 

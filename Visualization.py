@@ -24,13 +24,6 @@ class Interactive_Animation(FuncAnimation):
                                            save_count=save_count,
                                interval=interval, **kwargs )
 
-    # def wrap(self, func):
-    #     def func_wrapper(i):
-    #         func(i)
-    #         # if self.tracked.size:
-    #         #   self.ax[0].scatter(self.tracked[:,0], self.tracked[:,1], c='r', s=10)
-    #     return func_wrapper
-
     def play(self):
         while self.runs:
             self.i = self.i+self.forwards-(not self.forwards)

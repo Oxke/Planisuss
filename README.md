@@ -28,7 +28,33 @@ then start the simulation using the command
 -b NEIGHBORHOOD | --neighborhood NEIGHBORHOOD | The number of cells that are considered to be nearby, hence visible by Erbasts. | 1
 -m DISTANCE | --distance DISTANCE | The metric to be used. | Euclidean
 
+### UI usage
+the UI is made of two figures. The one on the left shows the current state of
+the world, with red, green and blue respectively meaning carvizes, erbasts and
+vegetob. The figure on the right shows past evolution of the demographic.
+Possible UI commands are:
+command | explanation | note
+--- | --- | ---
+spacebar / click on play button | stops and resumes the animation | -
+right arrow / click on right arrow | starts animation forwards | -
+left arrow / click on left arrow | start animation backwards | -
+rigthmost button | proceed forwards one step | -
+leftmost botton | proceed backwards one step | -
+buttom slider | decide speed | it's in logarithmic scale
+click on right figure | plots the corresponding day | only in pause
+left click on left figure | shows information about the cell | if cell is water, then it becomes land. Only in pause
+left click and drag on left | transforms all cells in the path to land | only in pause, if shift is pressed in the meanwhile, then all cells become water
+right click on left figure | drops little bomb | only in pause
+double click on left figure | drops big bomb | only in pause
+press 'e' | Erbasts are revived and respawned all over the map | only in pause
+press 'c' | Carvizes are revived and respawned all over the map | only in pause
+press enter | A checkpoint is saved | unstable, only in pause
+press 'r' | retrieve last checkpoint | unstable, only in pause
 
+
+
+
+# Planisuss Report
 ## The Planisuss world
 The world is stored as an Object of the Class World, which contains the variable
 `world.grid`: a NUMCELLS x NUMCELLS array containing objects of type Cell.
@@ -181,3 +207,22 @@ The day is constituted of these phases:
       and in that case the champion of the Herd gets killed and its energy is
       shared between the members of the Pride
 
+## Visualization
+The visualization consists of two graphs, one on the left showing the status and
+one on the right showing past evolution of the demographic. You can navigate in
+time through it using the commands and change the speed of the animation using
+the slider.
+The visualization works by creating a custom subclass of the `FuncAnimation`
+class from matplotlib, which plots a certain frame, and then the function
+`World.plot` takes care of understanding if we are in a new frame or in an
+already simulated one.
+Clicking on the graph on the right you can go directely to a certain day, and
+clicking on the left one you can either get information about the cell (left
+click), throwing bombs (right click) or changing the geography (left click-and
+drag)
+
+## Work in Progress...
+I'm trying to implement a saving mechanic, but I've encountered some issues, so
+as of right now it is not stable, however it would work by pickling the grid and
+history of the world, together with the variable CARVIZES and ERBASTS, and then
+it should be possible to come back at those saved point in time.
