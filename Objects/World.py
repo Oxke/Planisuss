@@ -11,7 +11,7 @@ from numpy import random as rd
 from Objects.Cell import Cell
 from matplotlib import pyplot as plt
 from errors import TotalExtinction
-from variables import ERBASTS, CARVIZES, CAUSE_OF_DEATH
+from variables import ERBASTS, CARVIZES, CAUSE_OF_DEATH, DISTANCE
 
 SAVED = []
 
@@ -31,7 +31,13 @@ class World:
 
     def distance(self, cell1, cell2):
         """Returns the distance between two cells"""
-        return np.linalg.norm([abs(cell1.x-cell2.x), abs(cell1.y-cell2.y)]) # Euclidean distance
+        if DISTANCE = "Euclidean":
+            return np.linalg.norm([abs(cell1.x-cell2.x), abs(cell1.y-cell2.y)])
+        if DISTANCE = "Manhattan":
+            return abs(cell1.x-cell2.x) + abs(cell1.y-cell2.y)
+        if DISTANCE = "Chebyshev":
+            return max(abs(cell1.x-cell2.x), abs(cell1.y-cell2.y))
+
 
     def get_neighbors(self, cell: Cell, near=None, flag=None):
         """Returns the neighborhood of a cell, according to the distance defined"""

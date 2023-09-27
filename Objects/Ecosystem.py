@@ -31,6 +31,7 @@ class Vegetob:
         if self.density < 1:
             self.density = 1
         else:
+            # even logistic curve, resulted in the death of Erbasts
             # self.density += self.density * (100 - self.density) / 10000
             self.density += self.density * (100 - self.density)**2 / 100000
 
@@ -172,7 +173,8 @@ class Erbast(Animal):
         self.herd.remove(self)
         # this partitions randomly the energy and lifetime of the ancestor to
         # the children
-        if self.energy > 5 and reason not in ["overcrowding", "hunted_down"]:
+        if self.energy > 5 and reason not in ["overcrowding", "hunted_down",
+                                              "bomb"]:
             for E, L in zip(part(self.energy, 2), part(self.lifetime*2, 2)):
                 s_a = min(1, max(0.1, np.random.normal(self.social_attitude, 0.1)))
                 try:
@@ -269,8 +271,7 @@ class Carviz(Animal):
         self.pride.remove(self)
         # this partitions randomly the energy and lifetime of the ancestor to
         # the children
-        if self.energy > 5 and reason not in ["overcrowding", "fight"]:
-            # number = np.random.randint(2, 4)
+        if self.energy > 5 and reason not in ["overcrowding", "fight", "bomb"]:
             number = 2
             for E, L in zip(part(self.energy, number),
                             part(self.lifetime*number, number)):
@@ -290,9 +291,7 @@ class Group:
                  tracked=[]):
         self.pos = pos
         self.world = world
-        self._members = []
-        self.members_id = [m.id for m in members]
-        self.past_cells = []
+        self.members_id = [m.id for m in members].
         self.memory = {}
         self.tracked = tracked
 
@@ -315,6 +314,7 @@ class Group:
 
     def remove(self, member: Carviz or Erbast):
         self.members_id = [m for m in self.members_id if m != member._id]
+        # riskier way to do it
         # if len(self) == 0:
         #     if isinstance(self, Herd):
         #         self.pos.remove_herd()
