@@ -18,7 +18,7 @@ To run the execution, first satisfy the library requisites in the file
 
 then start the simulation using the command
 
-```main.py [-h] [-n NUM_CELLS] [-d DAYS] [-b NEIGHBORHOOD] [-m DISTANCE]```
+```python main.py [-h] [-n NUM_CELLS] [-d DAYS] [-b NEIGHBORHOOD] [-m DISTANCE]```
 
 | short command | long command | explanation | default value
 --- | --- | --- | ---
