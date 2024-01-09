@@ -22,7 +22,7 @@ dill==0.3.7
 executing==1.2.0
 fastjsonschema==2.18.0
 flake8==6.0.0
-fonttools==4.40.0
+fonttools==4.43.0
 fqdn==1.5.1
 greenlet==2.0.2
 idna==3.4
