@@ -25,7 +25,7 @@ flake8==6.0.0
 fonttools==4.43.0
 fqdn==1.5.1
 greenlet==2.0.2
-idna==3.4
+idna==3.7
 ipykernel==6.25.1
 ipython==8.14.0
 ipython-genutils==0.2.0
