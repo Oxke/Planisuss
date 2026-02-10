@@ -58,7 +58,7 @@ mccabe==0.7.0
 mistune==3.0.1
 msgpack==1.0.5
 nbclient==0.8.0
-nbconvert==7.7.4
+nbconvert==7.17.0
 nbformat==5.9.2
 nest-asyncio==1.5.7
 notebook==7.2.2
